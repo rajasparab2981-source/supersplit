@@ -1,0 +1,3377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#08080C" />
+  <title>SplitPro — Split bills in ₹</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg:         #08080C;
+      --bg-soft:    #0F0F16;
+      --surface:    #15151E;
+      --surface-2:  #1C1C28;
+      --surface-3:  #25253A;
+      --border:     rgba(255,255,255,0.06);
+      --border-2:   rgba(255,255,255,0.10);
+      --border-3:   rgba(255,255,255,0.16);
+
+      --text:       #FFFFFF;
+      --text-soft:  #A0A0B0;
+      --text-mute:  #6B6B7D;
+      --text-faint: #45455A;
+
+      --primary:    #00E5A0;        /* neon money green = "you're owed" */
+      --primary-2:  #1BFFB8;
+      --primary-deep:#00B080;
+      --primary-soft:rgba(0,229,160,.12);
+
+      --negative:   #FF4D6D;        /* coral red = "you owe" */
+      --negative-soft: rgba(255,77,109,.12);
+
+      --gold:       #FFC857;
+      --purple:     #6E5BFF;
+      --warning:    #FFA740;
+
+      --s-1: 8px; --s-2: 16px; --s-3: 24px; --s-4: 32px; --s-5: 40px; --s-6: 56px;
+      --r-1: 10px; --r-2: 14px; --r-3: 20px; --r-4: 28px;
+
+      --shadow-glow: 0 0 0 1px rgba(0,229,160,.25), 0 8px 32px rgba(0,229,160,.18);
+      --shadow-card: 0 12px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+
+      --app-max: 480px;
+      --header-h: 64px;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-weight: 400; font-size: 15px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      overscroll-behavior-y: none;
+      background-image:
+        radial-gradient(1200px 600px at 50% -200px, rgba(0,229,160,.07), transparent 60%),
+        radial-gradient(800px 500px at 90% 100%, rgba(110,91,255,.06), transparent 60%);
+      background-attachment: fixed;
+      min-height: 100vh;
+    }
+
+    button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+    button { background: transparent; border: 0; cursor: pointer; padding: 0; }
+    a { color: inherit; text-decoration: none; }
+
+    input, select, textarea {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-1);
+      padding: 14px 16px;
+      width: 100%;
+      outline: none;
+      color: var(--text);
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-faint); }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(0,229,160,.12);
+      background: var(--surface-2);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); cursor: pointer; }
+
+    /* ---------- App shell ---------- */
+    .app {
+      max-width: var(--app-max);
+      margin: 0 auto;
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: var(--s-6);
+    }
+
+    .app-header {
+      position: sticky; top: 0; z-index: 20;
+      height: var(--header-h);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 var(--s-2);
+      background: rgba(8,8,12,.85);
+      backdrop-filter: blur(20px) saturate(150%);
+      border-bottom: 1px solid transparent;
+      transition: border-color .2s ease;
+    }
+    .app-header.scrolled { border-bottom-color: var(--border); }
+
+    .app-header h1 {
+      font-family: 'Manrope';
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: -.03em;
+      margin: 0;
+      background: linear-gradient(135deg, #FFFFFF 0%, #C7C7E0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .app-header .crumb {
+      font-family: 'Inter'; font-weight: 500; font-size: 11px;
+      color: var(--text-mute); margin: 0; line-height: 1;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+
+    .icon-btn {
+      width: 44px; height: 44px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px;
+      color: var(--text-soft);
+      transition: background .15s ease, color .15s ease;
+    }
+    .icon-btn:hover { background: var(--surface); color: var(--text); }
+    .icon-btn:active { background: var(--surface-2); }
+
+    .app-content { padding: 0 var(--s-2) var(--s-4); }
+
+    /* ---------- Section title ---------- */
+    .section-title {
+      font-family: 'Inter';
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-mute);
+      margin: var(--s-3) 0 10px;
+      padding: 0 var(--s-1);
+    }
+    .section-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin: var(--s-3) 0 10px;
+      padding: 0 var(--s-1);
+    }
+    .section-row .section-title { margin: 0; padding: 0; }
+    .section-row .add-btn {
+      font-family: 'Inter'; font-weight: 700; font-size: 12px;
+      color: var(--primary); padding: 6px 12px; border-radius: 999px;
+      background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.25);
+      transition: background .15s ease;
+    }
+    .section-row .add-btn:hover { background: rgba(0,229,160,.15); }
+
+    /* ---------- Summary hero ---------- */
+    .summary {
+      position: relative;
+      border-radius: var(--r-4);
+      padding: var(--s-3) var(--s-3);
+      margin: var(--s-2) 0;
+      overflow: hidden;
+      background:
+        radial-gradient(120% 100% at 0% 0%, rgba(0,229,160,.16) 0%, transparent 60%),
+        radial-gradient(100% 80% at 100% 100%, rgba(110,91,255,.16) 0%, transparent 60%),
+        linear-gradient(140deg, #15151E 0%, #1C1C2C 100%);
+      border: 1px solid var(--border-2);
+    }
+    .summary .grain {
+      position: absolute; inset: 0; pointer-events: none; opacity: .04;
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,1) 1px, transparent 0);
+      background-size: 4px 4px;
+    }
+    .summary .net {
+      font-family: 'Manrope'; font-weight: 800;
+      font-size: 42px; letter-spacing: -.04em; line-height: 1;
+      margin: 6px 0 4px;
+      position: relative;
+    }
+    .summary .net.pos { color: var(--primary); text-shadow: 0 0 24px rgba(0,229,160,.25); }
+    .summary .net.neg { color: var(--negative); }
+    .summary .net.zero { color: var(--text-soft); }
+
+    .summary .label {
+      font-family: 'Inter'; font-weight: 600; font-size: 11px;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-soft); margin: 0;
+      position: relative;
+    }
+    .summary .sub {
+      font-family: 'Inter'; font-weight: 500; font-size: 13px;
+      color: var(--text-soft); margin: 0;
+      position: relative;
+    }
+    .summary-split {
+      display: flex; gap: 12px; margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-2);
+      position: relative;
+    }
+    .summary-split > div { flex: 1; min-width: 0; }
+    .summary-split .col-label {
+      font-family: 'Inter'; font-weight: 600; font-size: 10px;
+      color: var(--text-mute); text-transform: uppercase; letter-spacing: .08em;
+    }
+    .summary-split .col-amt {
+      font-family: 'Manrope'; font-weight: 800;
+      font-size: 17px; letter-spacing: -.01em;
+      margin-top: 4px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .summary-split .col-amt.pos { color: var(--primary); }
+    .summary-split .col-amt.neg { color: var(--negative); }
+
+    /* ---------- "I am" self bar ---------- */
+    .self-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      margin-bottom: 12px;
+      gap: 10px;
+    }
+    .self-bar .self-label {
+      font-family: 'Inter'; font-weight: 500; font-size: 12px;
+      color: var(--text-mute); letter-spacing: .04em; text-transform: uppercase;
+    }
+    .self-bar .self-current {
+      font-family: 'Manrope'; font-weight: 700; font-size: 14px;
+      color: var(--text);
+      display: inline-flex; align-items: center; gap: 8px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .self-bar button {
+      font-family: 'Inter'; font-weight: 600; font-size: 12px;
+      color: var(--primary);
+      padding: 6px 12px; border-radius: 999px;
+      background: rgba(0,229,160,.1);
+      border: 1px solid rgba(0,229,160,.2);
+    }
+    .self-bar button:hover { background: rgba(0,229,160,.18); }
+
+    /* ---------- Row / list ---------- */
+    .row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-3);
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .08s ease;
+      overflow: hidden;
+      position: relative;
+    }
+    .row + .row { margin-top: 10px; }
+    .row:hover { background: var(--surface-2); border-color: var(--border-2); }
+    .row:active { transform: scale(.99); }
+    .row::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--accent-color, var(--primary));
+      opacity: .8;
+    }
+
+    .row-emoji {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent-color, var(--primary)) 0%, color-mix(in srgb, var(--accent-color, var(--primary)) 60%, #000) 100%);
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--accent-color, var(--primary)) 30%, transparent);
+    }
+    .row-main { flex: 1; min-width: 0; }
+    .row-title {
+      font-family: 'Manrope'; font-weight: 700; font-size: 16px;
+      letter-spacing: -.01em; color: var(--text);
+      margin: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .row-sub {
+      font-family: 'Inter'; font-weight: 500; font-size: 12px;
+      color: var(--text-mute); margin: 4px 0 0;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+
+    .row-balance { text-align: right; flex-shrink: 0; }
+    .row-balance .b-label {
+      font-family: 'Inter'; font-weight: 500; font-size: 10px;
+      color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em;
+    }
+    .row-balance .b-amt {
+      font-family: 'Manrope'; font-weight: 800; font-size: 16px;
+      letter-spacing: -.02em; margin-top: 2px;
+    }
+    .row-balance .b-amt.pos { color: var(--primary); }
+    .row-balance .b-amt.neg { color: var(--negative); }
+    .row-balance .b-amt.zero { color: var(--text-mute); }
+
+    /* ---------- Empty states ---------- */
+    .empty { text-align: center; padding: var(--s-6) var(--s-3); }
+    .empty .emoji-bubble {
+      width: 88px; height: 88px;
+      border-radius: 28px;
+      margin: 0 auto var(--s-2);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 44px;
+      background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%);
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 32px rgba(0,0,0,.4);
+    }
+    .empty h3 {
+      font-family: 'Manrope'; font-weight: 700;
+      font-size: 20px; letter-spacing: -.02em;
+      margin: 0 0 6px; color: var(--text);
+    }
+    .empty p {
+      font-family: 'Inter'; font-weight: 400; font-size: 14px;
+      color: var(--text-soft); margin: 0; max-width: 280px; margin-inline: auto;
+    }
+
+    /* ---------- Buttons ---------- */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; height: 52px; padding: 0 22px;
+      border-radius: var(--r-2);
+      font-family: 'Manrope'; font-weight: 700; font-size: 15px;
+      letter-spacing: -.01em;
+      transition: transform .08s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #0A1A14;
+      box-shadow: var(--shadow-glow);
+    }
+    .btn-primary:hover { background: var(--primary-2); }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface-2); border-color: var(--border-2); }
+
+    .btn-soft {
+      background: rgba(0,229,160,.10);
+      color: var(--primary);
+      border: 1px solid rgba(0,229,160,.25);
+    }
+    .btn-soft:hover { background: rgba(0,229,160,.18); }
+
+    .btn-danger {
+      background: rgba(255,77,109,.10);
+      color: var(--negative);
+      border: 1px solid rgba(255,77,109,.25);
+    }
+    .btn-danger:hover { background: rgba(255,77,109,.20); }
+
+    .btn-full { width: 100%; }
+
+    .fab {
+      position: fixed; bottom: calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+      right: 50%;
+      transform: translateX(calc(var(--app-max) / 2 - 76px));
+      width: 60px; height: 60px;
+      border-radius: 999px;
+      background: var(--primary); color: #0A1A14;
+      box-shadow: 0 0 0 1px rgba(0,229,160,.4), 0 12px 32px rgba(0,229,160,.4), 0 4px 12px rgba(0,0,0,.4);
+      display: inline-flex; align-items: center; justify-content: center;
+      z-index: 15;
+      transition: transform .12s ease, background .15s ease;
+    }
+    .fab:hover { background: var(--primary-2); }
+    .fab:active { transform: translateX(calc(var(--app-max) / 2 - 76px)) scale(.94); }
+    @media (max-width: 520px) {
+      .fab { right: var(--s-3); transform: none; }
+      .fab:active { transform: scale(.94); }
+    }
+
+    /* ---------- Avatars ---------- */
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: 'Manrope'; font-weight: 700; font-size: 13px;
+      color: #FFFFFF;
+      flex-shrink: 0;
+      letter-spacing: 0;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+    }
+    .avatar.sm { width: 28px; height: 28px; font-size: 11px; }
+    .avatar.lg { width: 56px; height: 56px; font-size: 18px; border-radius: 999px; }
+
+    /* ---------- Member pills / chips ---------- */
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+      color: var(--text-soft);
+      transition: all .15s ease;
+      min-height: 38px;
+    }
+    .chip.selectable { cursor: pointer; }
+    .chip.selectable:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
+    .chip.active {
+      background: var(--primary); border-color: var(--primary); color: #0A1A14;
+    }
+    .chip.active.soft {
+      background: var(--primary-soft); border-color: rgba(0,229,160,.4); color: var(--primary);
+    }
+
+    .chip-member {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 14px 4px 4px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+      color: var(--text);
+      transition: all .15s ease;
+      min-height: 40px;
+      cursor: pointer;
+    }
+    .chip-member:hover { border-color: var(--border-2); background: var(--surface-2); }
+    .chip-member.active {
+      background: rgba(0,229,160,.10);
+      border-color: rgba(0,229,160,.4);
+      color: var(--primary);
+    }
+    .chip-member.selected-pay {
+      background: var(--primary); border-color: var(--primary); color: #0A1A14;
+    }
+    .chip-member .you-tag {
+      font-size: 10px; color: var(--primary); font-weight: 800;
+      letter-spacing: .04em;
+    }
+    .chip-member.selected-pay .you-tag { color: #0A1A14; }
+
+    .member-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 4px 12px 4px 4px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+      color: var(--text);
+      min-height: 40px;
+    }
+    .member-pill .x {
+      font-family: 'Inter'; font-weight: 500; font-size: 13px;
+      color: var(--text-mute); padding: 0 4px;
+    }
+    .member-pill .x:hover { color: var(--negative); }
+
+    /* ---------- Tabs (segmented) ---------- */
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px;
+      margin: var(--s-2) 0;
+    }
+    .tab {
+      flex: 1; height: 40px;
+      border-radius: 999px;
+      font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+      color: var(--text-mute);
+      transition: background .15s ease, color .15s ease;
+    }
+    .tab.active {
+      background: linear-gradient(180deg, var(--surface-3) 0%, var(--surface-2) 100%);
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+
+    /* ---------- Amounts ---------- */
+    .amt { font-family: 'Manrope'; font-weight: 800; letter-spacing: -.02em; }
+    .amt-xl { font-size: 28px; letter-spacing: -.03em; }
+    .amt-lg { font-size: 22px; }
+    .amt-md { font-size: 17px; }
+    .amt-sm { font-size: 14px; }
+    .amt.pos { color: var(--primary); }
+    .amt.neg { color: var(--negative); }
+    .amt.zero { color: var(--text-mute); }
+
+    /* ---------- Forms ---------- */
+    .field { margin-bottom: var(--s-2); }
+    .field-label {
+      display: block;
+      font-family: 'Inter'; font-weight: 600;
+      font-size: 11px; letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-mute); margin-bottom: 8px;
+    }
+    .amount-input-wrap { position: relative; }
+    .amount-input-wrap::before {
+      content: '₹';
+      position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+      font-family: 'Manrope'; font-weight: 800; font-size: 22px;
+      color: var(--text-mute); pointer-events: none;
+    }
+    .amount-input {
+      font-family: 'Manrope'; font-weight: 800; font-size: 26px;
+      letter-spacing: -.02em;
+      padding-left: 40px;
+    }
+    .split-hint {
+      font-family: 'Inter'; font-weight: 500; font-size: 12px;
+      color: var(--primary); margin-top: 8px; padding-left: 4px;
+    }
+
+    /* ---------- Pickers ---------- */
+    .swatches { display: flex; gap: 12px; flex-wrap: wrap; }
+    .swatch {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+    }
+    .swatch.active {
+      border-color: var(--text);
+      transform: scale(1.06);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 4px 14px rgba(0,0,0,.4);
+    }
+    .emoji-picker { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+    .emoji-cell {
+      height: 42px; border-radius: var(--r-1); font-size: 22px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background .12s ease;
+    }
+    .emoji-cell:hover { background: var(--surface-2); }
+    .emoji-cell.active { background: rgba(0,229,160,.15); }
+
+    /* ---------- Bottom sheet ---------- */
+    .scrim {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+      animation: fade-in .2s ease;
+    }
+    .sheet {
+      position: fixed; left: 50%; bottom: 0;
+      transform: translateX(-50%);
+      width: 100%; max-width: var(--app-max);
+      background: var(--bg-soft);
+      border: 1px solid var(--border-2);
+      border-bottom: 0;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -20px 60px rgba(0,0,0,.6);
+      z-index: 60;
+      max-height: 92vh;
+      display: flex; flex-direction: column;
+      animation: slide-up .25s cubic-bezier(.2,.8,.25,1);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .sheet-handle {
+      width: 44px; height: 4px;
+      background: var(--border-2);
+      border-radius: 999px;
+      margin: 10px auto 4px;
+      flex-shrink: 0;
+    }
+    .sheet-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--s-1) var(--s-2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sheet-title {
+      font-family: 'Manrope'; font-weight: 700;
+      font-size: 17px; letter-spacing: -.01em;
+      margin: 0;
+    }
+    .sheet-cancel, .sheet-save {
+      font-family: 'Manrope'; font-weight: 600; font-size: 14px;
+      padding: 8px 10px; border-radius: 8px;
+    }
+    .sheet-cancel { color: var(--text-mute); }
+    .sheet-cancel:hover { background: var(--surface); color: var(--text); }
+    .sheet-save { color: var(--primary); }
+    .sheet-save:hover { background: rgba(0,229,160,.1); }
+    .sheet-save:disabled { color: var(--text-faint); background: transparent; cursor: not-allowed; }
+
+    .sheet-body { padding: var(--s-2); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slide-up { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
+
+    /* ---------- Toast ---------- */
+    .toast-stack {
+      position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px);
+      left: 50%; transform: translateX(-50%);
+      z-index: 100;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+      width: calc(100% - 24px); max-width: 380px;
+    }
+    .toast {
+      background: var(--surface-2);
+      border: 1px solid var(--border-2);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: var(--r-2);
+      font-family: 'Inter'; font-weight: 500; font-size: 13px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.5);
+      animation: toast-in .25s cubic-bezier(.2,.8,.25,1);
+      pointer-events: auto;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toast.success { border-color: rgba(0,229,160,.35); }
+    .toast.success .toast-icon { color: var(--primary); }
+    .toast.error   { border-color: rgba(255,77,109,.35); }
+    .toast.error .toast-icon { color: var(--negative); }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- Expense row ---------- */
+    .exp-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-2);
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    .exp-row + .exp-row { margin-top: 8px; }
+    .exp-row:hover { background: var(--surface-2); border-color: var(--border-2); }
+
+    .exp-cat {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .exp-main { flex: 1; min-width: 0; }
+    .exp-desc {
+      font-family: 'Manrope'; font-weight: 600; font-size: 15px;
+      color: var(--text); margin: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .exp-payer {
+      font-family: 'Inter'; font-weight: 500; font-size: 11px;
+      color: var(--text-mute); margin: 4px 0 0;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .exp-side { text-align: right; flex-shrink: 0; min-width: 90px; }
+    .exp-side .you-line {
+      font-family: 'Manrope'; font-weight: 800; font-size: 15px;
+      letter-spacing: -.01em;
+    }
+    .exp-side .you-line.pos { color: var(--primary); }
+    .exp-side .you-line.neg { color: var(--negative); }
+    .exp-side .you-line.zero { color: var(--text-mute); }
+    .exp-side .you-label {
+      font-family: 'Inter'; font-weight: 500; font-size: 10px;
+      color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em;
+      margin-top: 2px;
+    }
+    .exp-side .total {
+      font-family: 'Inter'; font-weight: 500; font-size: 10px;
+      color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em;
+    }
+    .exp-side .total-amt {
+      font-family: 'Manrope'; font-weight: 700; font-size: 15px;
+      color: var(--text); margin-top: 2px;
+    }
+
+    /* ---------- Balance / settle ---------- */
+    .balance-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-2);
+    }
+    .balance-row + .balance-row { margin-top: 8px; }
+    .balance-row .name {
+      font-family: 'Manrope'; font-weight: 600; font-size: 15px;
+      color: var(--text);
+    }
+    .balance-row .status {
+      font-family: 'Inter'; font-weight: 500; font-size: 10px;
+      color: var(--text-mute); margin-top: 2px;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+
+    .settle-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-2);
+    }
+    .settle-row + .settle-row { margin-top: 8px; }
+    .settle-row .who {
+      font-family: 'Manrope'; font-weight: 600; font-size: 14px;
+      color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .settle-row .arrow { color: var(--primary); flex-shrink: 0; }
+    .settle-row .pay-amt {
+      margin-left: auto;
+      font-family: 'Manrope'; font-weight: 800; font-size: 15px;
+      letter-spacing: -.02em; color: var(--primary);
+    }
+
+    /* ---------- Settings ---------- */
+    .settings-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-2);
+      gap: 12px;
+    }
+    .settings-item + .settings-item { margin-top: 8px; }
+    .settings-item .label {
+      font-family: 'Manrope'; font-weight: 600; font-size: 15px;
+      color: var(--text);
+    }
+    .settings-item .desc {
+      font-family: 'Inter'; font-weight: 400; font-size: 12px;
+      color: var(--text-mute); margin-top: 2px;
+    }
+    .coming-soon, .badge-ok, .badge-warn {
+      font-family: 'Inter'; font-weight: 600; font-size: 10px;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .coming-soon { color: var(--gold); background: rgba(255,200,87,.1); border: 1px solid rgba(255,200,87,.25); }
+    .badge-ok    { color: var(--primary); background: var(--primary-soft); border: 1px solid rgba(0,229,160,.3); }
+    .badge-warn  { color: var(--gold); background: rgba(255,200,87,.1); border: 1px solid rgba(255,200,87,.25); }
+
+    /* ---------- Helpers ---------- */
+    .spacer-1 { height: var(--s-1); }
+    .spacer-2 { height: var(--s-2); }
+    .spacer-3 { height: var(--s-3); }
+    .spacer-fab { height: 96px; }
+
+    .code-block {
+      font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-2);
+      padding: 12px 14px;
+      font-size: 11px;
+      color: var(--text-soft);
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    @media (max-width: 360px) {
+      .summary .net { font-size: 34px; }
+    }
+
+    /* ---------- Confetti celebration ---------- */
+    .confetti-stage {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 200;
+      overflow: hidden;
+    }
+    .confetti {
+      position: absolute;
+      top: -20px;
+      width: 10px; height: 16px;
+      animation: confetti-fall var(--dur, 2.5s) cubic-bezier(.3,.7,.5,1) forwards;
+      transform-origin: center;
+      opacity: 0;
+    }
+    @keyframes confetti-fall {
+      0%   { transform: translate(0, -10vh) rotate(0deg);     opacity: 1; }
+      80%  { opacity: 1; }
+      100% { transform: translate(var(--x, 30px), 110vh) rotate(var(--rot, 720deg)); opacity: 0; }
+    }
+    .celebrate-banner {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 201;
+      pointer-events: none;
+      background: linear-gradient(135deg, rgba(0,229,160,.18) 0%, rgba(110,91,255,.18) 100%);
+      border: 1px solid rgba(0,229,160,.5);
+      backdrop-filter: blur(16px);
+      border-radius: 24px;
+      padding: 24px 32px;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 60px rgba(0,229,160,.3);
+      animation: celebrate-pop .5s cubic-bezier(.2,1.6,.3,1) forwards, celebrate-fade 2.5s ease-out forwards;
+    }
+    .celebrate-banner h2 {
+      font-family: 'Manrope'; font-weight: 800;
+      font-size: 28px; letter-spacing: -.02em;
+      color: var(--text); margin: 0;
+    }
+    .celebrate-banner p {
+      font-family: 'Inter'; font-weight: 500; font-size: 14px;
+      color: var(--text-soft); margin: 6px 0 0;
+    }
+    @keyframes celebrate-pop {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(.5); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    @keyframes celebrate-fade {
+      0%, 70% { opacity: 1; }
+      100%    { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Supabase JS is lazy-loaded by db.js only when the user connects.
+       Keeping it out of the critical path means a broken/slow CDN response
+       can't blank the page in local-only mode. -->
+
+  <!-- Optional built-in cloud credentials. If config.js is missing (404),
+       the page works fine in local mode. If present with values, friends
+       who open the deployed URL get auto-connected on first paint. -->
+  <script src="config.js"></script>
+  <script src="db.js"></script>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useMemo, useCallback } = React;
+    const DB = window.SplitProDB;
+
+    const SELF_KEY = 'splitpro_self_v1';
+    const UPI_KEY  = 'splitpro_upi_v1';   // { memberName: upiId }
+
+    // ---------- UPI helpers ----------
+    function loadUpiMap() {
+      try { return JSON.parse(localStorage.getItem(UPI_KEY) || '{}'); } catch { return {}; }
+    }
+    function saveUpiMap(obj) { localStorage.setItem(UPI_KEY, JSON.stringify(obj)); }
+
+    // RFC-style UPI URI: upi://pay?pa=<vpa>&pn=<name>&am=<amount>&cu=INR&tn=<note>
+    function buildUpiUri({ vpa, name, amount, note }) {
+      const params = new URLSearchParams();
+      params.set('pa', vpa);
+      params.set('pn', name);
+      params.set('am', String(Number(amount).toFixed(2)));
+      params.set('cu', 'INR');
+      if (note) params.set('tn', note);
+      return 'upi://pay?' + params.toString();
+    }
+
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    }
+
+    const CATEGORIES = [
+      { id: 'food',     label: 'Food',     emoji: '🍔' },
+      { id: 'travel',   label: 'Travel',   emoji: '✈️' },
+      { id: 'stay',     label: 'Stay',     emoji: '🏨' },
+      { id: 'drinks',   label: 'Drinks',   emoji: '🍹' },
+      { id: 'fun',      label: 'Fun',      emoji: '🎉' },
+      { id: 'shopping', label: 'Shopping', emoji: '🛍️' },
+      { id: 'fuel',     label: 'Fuel',     emoji: '⛽' },
+      { id: 'other',    label: 'Other',    emoji: '📌' },
+    ];
+    const CAT_BY_ID = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
+    const GROUP_EMOJIS = ['👥','🏖️','🏠','🎓','💼','❤️','🍕','🎬','🚗','⚽','✈️','🏔️','🎵','☕','🍻','🌴'];
+    const TRIP_EMOJIS  = ['🏖️','✈️','🏔️','🚗','🏠','🎉','🍽️','💼','🌴','🎬','🛍️','⛺','🏛️','🎢','🚂','⛵'];
+    const COLORS = ['#00E5A0','#6E5BFF','#FF4D6D','#FFC857','#3DA9FC','#FF7AB6','#3FE0D0','#FFA740'];
+    const AVATAR_COLORS = [
+      ['#00E5A0','#00B080'],['#6E5BFF','#5040C8'],['#FF4D6D','#C9304E'],['#FFC857','#D9A030'],
+      ['#3DA9FC','#2380D0'],['#FF7AB6','#D9568F'],['#3FE0D0','#28A89A'],['#FFA740','#D9821C'],
+      ['#A78BFA','#7C5CD9'],['#34D399','#10B981'],['#F472B6','#DB2777'],['#60A5FA','#3B82F6'],
+    ];
+
+    const inrFmt  = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    const inrFmt2 = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
+    const fmtINR  = (n, decimals=false) => (decimals ? inrFmt2 : inrFmt).format(Number(n) || 0);
+    const fmtDate = (iso) => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    const todayISO = () => new Date().toISOString().slice(0, 10);
+
+    function hashStr(s) {
+      let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) & 0xfffffff;
+      return h;
+    }
+
+    // Read a File, downscale to maxDim px, return base64 JPEG data URL.
+    // Keeps photos under ~120 KB so they're safe to embed in DB rows.
+    function compressImage(file, maxDim = 1024, quality = 0.72) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type || !file.type.startsWith('image/')) {
+          reject(new Error('Please pick an image file'));
+          return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => reject(new Error('Failed to decode image'));
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              const ratio = width > height ? maxDim / width : maxDim / height;
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            try {
+              const dataUrl = canvas.toDataURL('image/jpeg', quality);
+              resolve(dataUrl);
+            } catch (e) { reject(e); }
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    function avatarColors(name) { return AVATAR_COLORS[hashStr(name) % AVATAR_COLORS.length]; }
+    function initials(name) {
+      if (!name) return '?';
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function Avatar({ name, size = 'md' }) {
+      const [a, b] = avatarColors(name);
+      return (
+        <span
+          className={`avatar ${size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : ''}`}
+          style={{ background: `linear-gradient(135deg, ${a} 0%, ${b} 100%)` }}
+          title={name}
+        >
+          {initials(name)}
+        </span>
+      );
+    }
+
+    function loadSelf() {
+      try { return JSON.parse(localStorage.getItem(SELF_KEY) || '{}'); } catch { return {}; }
+    }
+    function saveSelf(obj) { localStorage.setItem(SELF_KEY, JSON.stringify(obj)); }
+
+    function expenseShares(e) {
+      // Returns { name: amount } for what each member owes on this expense.
+      // If `shares` is set on the expense, use those exact amounts.
+      // Otherwise fall back to equal split across split_among.
+      const amt = Number(e.amount) || 0;
+      if (e.shares && typeof e.shares === 'object' && Object.keys(e.shares).length > 0) {
+        const out = {};
+        for (const [k, v] of Object.entries(e.shares)) out[k] = Number(v) || 0;
+        return out;
+      }
+      const splitters = Array.isArray(e.split_among) ? e.split_among : [];
+      if (splitters.length === 0) return {};
+      const each = amt / splitters.length;
+      const out = {};
+      for (const s of splitters) out[s] = each;
+      return out;
+    }
+
+    function calcBalances(expenses) {
+      const totals = new Map();
+      const ensure = (n) => { if (!totals.has(n)) totals.set(n, 0); };
+      for (const e of expenses) {
+        const amt = Number(e.amount) || 0;
+        const shares = expenseShares(e);
+        if (Object.keys(shares).length === 0) continue;
+        ensure(e.paid_by);
+        totals.set(e.paid_by, totals.get(e.paid_by) + amt);
+        for (const [name, share] of Object.entries(shares)) {
+          ensure(name);
+          totals.set(name, totals.get(name) - share);
+        }
+      }
+      return [...totals.entries()].map(([name, net]) => ({ name, net })).sort((a, b) => b.net - a.net);
+    }
+    function calcSettlements(balances) {
+      const eps = 0.01;
+      const creditors = balances.filter((b) => b.net >  eps).map((b) => ({ ...b }));
+      const debtors   = balances.filter((b) => b.net < -eps).map((b) => ({ ...b, net: -b.net }));
+      creditors.sort((a, b) => b.net - a.net); debtors.sort((a, b) => b.net - a.net);
+      const transfers = []; let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const d = debtors[i], c = creditors[j];
+        const amt = Math.min(d.net, c.net);
+        transfers.push({ from: d.name, to: c.name, amount: amt });
+        d.net -= amt; c.net -= amt;
+        if (d.net < eps) i++;
+        if (c.net < eps) j++;
+      }
+      return transfers;
+    }
+    function youLine(e, self) {
+      if (!self) return null;
+      const shares = expenseShares(e);
+      const myShare = shares[self];
+      const isPayer = e.paid_by === self;
+      const isSplitter = myShare != null;
+      if (!isPayer && !isSplitter) return null;
+      let net = 0;
+      if (isPayer) net += Number(e.amount) || 0;
+      if (isSplitter) net -= myShare;
+      return net;
+    }
+
+    function useToasts() {
+      const [toasts, setToasts] = useState([]);
+      const push = useCallback((message, type = 'default') => {
+        const id = Math.random().toString(36).slice(2);
+        setToasts((prev) => [...prev, { id, message, type }]);
+        setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 2500);
+      }, []);
+      return { toasts, push };
+    }
+    // CSS-only confetti. Fires once, parent removes after animation.
+    function Celebration({ message }) {
+      const confetti = useMemo(() => {
+        const colors = ['#00E5A0', '#6E5BFF', '#FFC857', '#FF4D6D', '#3DA9FC', '#FF7AB6'];
+        const arr = [];
+        for (let i = 0; i < 80; i++) {
+          arr.push({
+            id: i,
+            left: Math.random() * 100,
+            x: (Math.random() - 0.5) * 240,
+            rot: 360 + Math.random() * 720,
+            dur: 2 + Math.random() * 1.6,
+            delay: Math.random() * 0.4,
+            color: colors[i % colors.length],
+            size: 6 + Math.random() * 10,
+          });
+        }
+        return arr;
+      }, []);
+      return (
+        <React.Fragment>
+          <div className="confetti-stage" aria-hidden="true">
+            {confetti.map((c) => (
+              <span
+                key={c.id}
+                className="confetti"
+                style={{
+                  left: c.left + '%',
+                  background: c.color,
+                  width: c.size + 'px',
+                  height: (c.size * 1.6) + 'px',
+                  animationDelay: c.delay + 's',
+                  '--x': c.x + 'px',
+                  '--rot': c.rot + 'deg',
+                  '--dur': c.dur + 's',
+                }}
+              />
+            ))}
+          </div>
+          <div className="celebrate-banner">
+            <div style={{ fontSize: 56, marginBottom: 4 }}>🎉</div>
+            <h2>All squared up!</h2>
+            <p>{message || 'Everyone\'s settled — enjoy the trip.'}</p>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    function ToastStack({ toasts }) {
+      return (
+        <div className="toast-stack">
+          {toasts.map((t) => (
+            <div key={t.id} className={`toast ${t.type}`}>
+              <span className="toast-icon">{t.type === 'success' ? '✓' : t.type === 'error' ? '!' : '·'}</span>
+              <span>{t.message}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    const Icon = {
+      Plus: (p) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+      Back: (p) => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="15 18 9 12 15 6"/></svg>,
+      Gear: (p) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+      Trash: (p) => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>,
+      Arrow: (p) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+      Check: (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="20 6 9 17 4 12"/></svg>,
+      Sync: (p) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+      Calc: (p) => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/><line x1="8" y1="19" x2="8" y2="19"/><line x1="12" y1="19" x2="12" y2="19"/><line x1="16" y1="19" x2="16" y2="19"/></svg>,
+      More: (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>,
+      Camera: (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+      X: (p) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    };
+
+    // ---------- Simple action menu (kebab popover) ----------
+    function ActionsSheet({ open, onClose, title, actions }) {
+      // actions: [{ label, danger, onClick, icon }]
+      return (
+        <Sheet open={open} onClose={onClose} title={title || 'Actions'}>
+          {actions.map((a, i) => (
+            <button
+              key={i}
+              onClick={() => { a.onClick(); }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                padding: '16px 18px',
+                background: 'var(--surface)',
+                border: '1px solid ' + (a.danger ? 'rgba(255,77,109,.25)' : 'var(--border)'),
+                borderRadius: 'var(--r-2)',
+                color: a.danger ? 'var(--negative)' : 'var(--text)',
+                fontFamily: 'Manrope', fontWeight: 600, fontSize: 15,
+                textAlign: 'left',
+                marginBottom: 8,
+                cursor: 'pointer',
+                transition: 'background .15s ease',
+              }}
+            >
+              {a.icon || null}
+              <span style={{ flex: 1 }}>{a.label}</span>
+            </button>
+          ))}
+          <div className="spacer-1" />
+          <button className="btn btn-ghost btn-full" onClick={onClose}>Cancel</button>
+          <div className="spacer-1" />
+        </Sheet>
+      );
+    }
+
+    function Sheet({ open, onClose, title, onSave, saveLabel = 'Save', canSave = true, children }) {
+      if (!open) return null;
+      return (
+        <React.Fragment>
+          <div className="scrim" onClick={onClose} />
+          <div className="sheet" role="dialog" aria-modal="true">
+            <div className="sheet-handle" />
+            <div className="sheet-header">
+              <button className="sheet-cancel" onClick={onClose}>Cancel</button>
+              <h3 className="sheet-title">{title}</h3>
+              {onSave ? (
+                <button className="sheet-save" onClick={onSave} disabled={!canSave}>{saveLabel}</button>
+              ) : <span style={{ width: 56 }} />}
+            </div>
+            <div className="sheet-body">{children}</div>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    function EmojiPicker({ pool, value, onChange }) {
+      return (
+        <div className="emoji-picker">
+          {pool.map((em) => (
+            <button key={em} type="button"
+              className={`emoji-cell ${em === value ? 'active' : ''}`}
+              onClick={() => onChange(em)}>{em}</button>
+          ))}
+        </div>
+      );
+    }
+    function ColorPicker({ value, onChange }) {
+      return (
+        <div className="swatches">
+          {COLORS.map((c) => (
+            <button key={c} type="button"
+              className={`swatch ${c === value ? 'active' : ''}`}
+              style={{ background: `linear-gradient(135deg, ${c} 0%, color-mix(in srgb, ${c} 60%, #000) 100%)` }}
+              onClick={() => onChange(c)} aria-label={`Color ${c}`} />
+          ))}
+        </div>
+      );
+    }
+
+    function Header({ title, subtitle, onBack, onSettings, onCalc, syncStatus }) {
+      const [scrolled, setScrolled] = useState(false);
+      useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 4);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+      }, []);
+      return (
+        <header className={`app-header ${scrolled ? 'scrolled' : ''}`}>
+          <div style={{ width: 44, display: 'flex', alignItems: 'center' }}>
+            {onBack ? <button className="icon-btn" onClick={onBack} aria-label="Back"><Icon.Back /></button> : null}
+          </div>
+          <div style={{ textAlign: 'center', flex: 1, minWidth: 0, padding: '0 8px' }}>
+            <h1>{title}</h1>
+            {subtitle ? <p className="crumb">{subtitle}</p> : null}
+          </div>
+          <div style={{ width: 92, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
+            {syncStatus === 'live' && (
+              <span title="Live sync" style={{ width: 8, height: 8, borderRadius: 999, background: 'var(--primary)', boxShadow: '0 0 8px var(--primary)', marginRight: 4 }} />
+            )}
+            {onCalc ? <button className="icon-btn" onClick={onCalc} aria-label="Calculator"><Icon.Calc /></button> : null}
+            {onSettings ? <button className="icon-btn" onClick={onSettings} aria-label="Settings"><Icon.Gear /></button> : null}
+          </div>
+        </header>
+      );
+    }
+
+    // ---------- Home: groups ----------
+    function GroupsView({ groups, groupSummaries, onOpen, onAdd }) {
+      const overallNet = useMemo(() => Object.values(groupSummaries).reduce((s, x) => s + (x?.net || 0), 0), [groupSummaries]);
+      const totalSpent = useMemo(() => Object.values(groupSummaries).reduce((s, x) => s + (x?.totalSpent || 0), 0), [groupSummaries]);
+      const anySelf = useMemo(() => Object.values(groupSummaries).some((x) => x?.hasSelf), [groupSummaries]);
+      const hasAny = groups.length > 0;
+
+      return (
+        <React.Fragment>
+          {hasAny && (
+            <div className="summary">
+              <div className="grain" />
+              <p className="label">{anySelf ? 'Your overall balance' : 'Total tracked'}</p>
+              {anySelf ? (
+                <React.Fragment>
+                  <p className={`net ${Math.abs(overallNet) < 0.5 ? 'zero' : overallNet > 0 ? 'pos' : 'neg'}`}>
+                    {Math.abs(overallNet) < 0.5 ? fmtINR(0) : (overallNet > 0 ? '+' : '−') + fmtINR(Math.abs(overallNet))}
+                  </p>
+                  <p className="sub">
+                    {Math.abs(overallNet) < 0.5 ? 'You\'re all settled up' : overallNet > 0 ? 'You are owed across all groups' : 'You owe across all groups'}
+                  </p>
+                </React.Fragment>
+              ) : (
+                <React.Fragment>
+                  <p className="net pos">{fmtINR(totalSpent)}</p>
+                  <p className="sub">Across {groups.length} group{groups.length === 1 ? '' : 's'} · pick yourself in a group to see "you owe"</p>
+                </React.Fragment>
+              )}
+            </div>
+          )}
+
+          {groups.length === 0 ? (
+            <div className="empty">
+              <div className="emoji-bubble">👥</div>
+              <h3>Start a new group</h3>
+              <p>Create your first split — track everything from chai runs to weekend trips.</p>
+              <div className="spacer-3" />
+              <button className="btn btn-primary" onClick={onAdd}><Icon.Plus /> New group</button>
+            </div>
+          ) : (
+            <React.Fragment>
+              <p className="section-title">Your groups</p>
+              <div>
+                {groups.map((g) => {
+                  const s = groupSummaries[g.id] || { totalSpent: 0, net: 0, hasSelf: false };
+                  return (
+                    <div key={g.id} className="row" style={{ '--accent-color': g.color }} onClick={() => onOpen(g.id)}>
+                      <span className="row-emoji" style={{ '--accent-color': g.color }}>{g.emoji}</span>
+                      <div className="row-main">
+                        <p className="row-title">{g.name}</p>
+                        <p className="row-sub">{s.totalSpent > 0 ? `${fmtINR(s.totalSpent)} spent` : 'No expenses yet'}</p>
+                      </div>
+                      <div className="row-balance">
+                        {s.hasSelf ? (
+                          <React.Fragment>
+                            <div className="b-label">{Math.abs(s.net) < 0.5 ? 'settled' : s.net > 0 ? 'you\'re owed' : 'you owe'}</div>
+                            <div className={`b-amt ${Math.abs(s.net) < 0.5 ? 'zero' : s.net > 0 ? 'pos' : 'neg'}`}>
+                              {Math.abs(s.net) < 0.5 ? '—' : fmtINR(Math.abs(s.net))}
+                            </div>
+                          </React.Fragment>
+                        ) : (
+                          <div className="b-label">tap to view</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </React.Fragment>
+          )}
+
+          <div className="spacer-fab" />
+          <button className="fab" onClick={onAdd} aria-label="Add group"><Icon.Plus /></button>
+        </React.Fragment>
+      );
+    }
+
+    // ---------- Group view ----------
+    function GroupView({ group, members, trips, self, tripSummaries, onOpenTrip, onAddMember, onRemoveMember, onAddTrip, onDeleteGroup, onChangeSelf, onOpenActions }) {
+      const totalSpent = useMemo(() => Object.values(tripSummaries).reduce((s, x) => s + (x?.totalSpent || 0), 0), [tripSummaries]);
+      const net = useMemo(() => Object.values(tripSummaries).reduce((s, x) => s + (x?.net || 0), 0), [tripSummaries]);
+      const youGet = useMemo(() => Object.values(tripSummaries).reduce((s, x) => s + Math.max(0, x?.net || 0), 0), [tripSummaries]);
+      const youOwe = useMemo(() => Object.values(tripSummaries).reduce((s, x) => s + Math.max(0, -(x?.net || 0)), 0), [tripSummaries]);
+
+      return (
+        <React.Fragment>
+          {members.length > 0 && (
+            <div className="self-bar">
+              <span className="self-label">I am</span>
+              <span className="self-current">
+                {self ? (
+                  <React.Fragment><Avatar name={self} size="sm" /> {self}</React.Fragment>
+                ) : (
+                  <span style={{ color: 'var(--text-mute)' }}>not set</span>
+                )}
+              </span>
+              <button onClick={onChangeSelf}>{self ? 'Change' : 'Pick'}</button>
+            </div>
+          )}
+
+          {/* Hero */}
+          <div className="summary" style={{
+            background: `radial-gradient(120% 100% at 0% 0%, ${group.color}30 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}20 0%, transparent 60%), linear-gradient(140deg, #15151E 0%, #1C1C2C 100%)`,
+            borderColor: `${group.color}40`,
+          }}>
+            <div className="grain" />
+            <button
+              onClick={onOpenActions}
+              aria-label="Group actions"
+              style={{
+                position: 'absolute', top: 12, right: 12,
+                width: 36, height: 36, borderRadius: 999,
+                background: 'rgba(0,0,0,.25)',
+                color: 'rgba(255,255,255,.8)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,.08)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 2,
+                cursor: 'pointer',
+              }}
+            ><Icon.More /></button>
+            <p className="label" style={{ color: group.color }}>{group.emoji} {group.name}</p>
+            {self ? (
+              <React.Fragment>
+                <p className={`net ${Math.abs(net) < 0.5 ? 'zero' : net > 0 ? 'pos' : 'neg'}`}>
+                  {Math.abs(net) < 0.5 ? fmtINR(0) : (net > 0 ? '+' : '−') + fmtINR(Math.abs(net))}
+                </p>
+                <p className="sub">
+                  {Math.abs(net) < 0.5 ? 'You\'re settled in this group' : net > 0 ? 'You are owed (net)' : 'You owe (net)'}
+                </p>
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <p className="net" style={{ color: group.color }}>{fmtINR(totalSpent)}</p>
+                <p className="sub">Total spent · pick yourself for personalized balance</p>
+              </React.Fragment>
+            )}
+            <div className="summary-split">
+              <div>
+                <div className="col-label">You're owed</div>
+                <div className="col-amt pos">{fmtINR(youGet)}</div>
+              </div>
+              <div>
+                <div className="col-label">You owe</div>
+                <div className="col-amt neg">{fmtINR(youOwe)}</div>
+              </div>
+              <div>
+                <div className="col-label">Total spent</div>
+                <div className="col-amt" style={{ color: 'var(--text)' }}>{fmtINR(totalSpent)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="section-row">
+            <p className="section-title">Members</p>
+            <button className="add-btn" onClick={onAddMember}>+ Add</button>
+          </div>
+
+          {members.length === 0 ? (
+            <div className="row" style={{ '--accent-color': 'var(--text-faint)', cursor: 'default' }}>
+              <div className="row-main">
+                <p className="row-sub" style={{ color: 'var(--text-soft)', textTransform: 'none', letterSpacing: 0, fontSize: 14 }}>
+                  Add members to start splitting expenses.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '8px 8px 4px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-3)' }}>
+              <div className="chips" style={{ padding: 8 }}>
+                {members.map((m) => (
+                  <span key={m.id} className="member-pill">
+                    <Avatar name={m.name} />
+                    {m.name === self && <span className="you-tag" style={{ color: 'var(--primary)' }}>YOU</span>}
+                    {m.name}
+                    <button className="x" onClick={() => onRemoveMember(m)} aria-label={`Remove ${m.name}`}>✕</button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="section-row">
+            <p className="section-title">Trips & plans</p>
+            <button className="add-btn" onClick={onAddTrip}>+ Add</button>
+          </div>
+
+          {trips.length === 0 ? (
+            <div className="row" style={{ '--accent-color': 'var(--text-faint)', cursor: 'default' }}>
+              <div className="row-main">
+                <p className="row-sub" style={{ color: 'var(--text-soft)', textTransform: 'none', letterSpacing: 0, fontSize: 14 }}>
+                  No trips yet. Create one to start adding expenses.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {trips.map((t) => {
+                const ts = tripSummaries[t.id] || { totalSpent: 0, net: 0, hasSelf: false };
+                return (
+                  <div key={t.id} className="row" style={{ '--accent-color': group.color }} onClick={() => onOpenTrip(t.id)}>
+                    <span className="row-emoji" style={{ '--accent-color': group.color }}>{t.emoji}</span>
+                    <div className="row-main">
+                      <p className="row-title">{t.name}</p>
+                      <p className="row-sub">{ts.totalSpent > 0 ? `${fmtINR(ts.totalSpent)} spent` : 'No expenses yet'}</p>
+                    </div>
+                    <div className="row-balance">
+                      {ts.hasSelf && Math.abs(ts.net) >= 0.5 ? (
+                        <React.Fragment>
+                          <div className="b-label">{ts.net > 0 ? 'you\'re owed' : 'you owe'}</div>
+                          <div className={`b-amt ${ts.net > 0 ? 'pos' : 'neg'}`}>{fmtINR(Math.abs(ts.net))}</div>
+                        </React.Fragment>
+                      ) : (
+                        <div className="b-label">{ts.hasSelf ? 'settled' : 'tap to view'}</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="spacer-fab" />
+        </React.Fragment>
+      );
+    }
+
+    // ---------- Trip view ----------
+    function TripView({ group, trip, members, expenses, self, onAddExpense, onEditExpense, onDeleteTrip, onPay, onOpenActions, onReact }) {
+      const [tab, setTab] = useState('expenses');
+      const total = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
+      const balances = useMemo(() => calcBalances(expenses), [expenses]);
+      const settlements = useMemo(() => calcSettlements(balances), [balances]);
+      const youNet = self ? (balances.find((b) => b.name === self)?.net || 0) : 0;
+
+      // Celebrate when transitioning from "had transfers" → "fully settled" for this trip
+      const [celebrating, setCelebrating] = useState(false);
+      const prevSettleCountRef = React.useRef(settlements.length);
+      const lastTripIdRef = React.useRef(trip.id);
+      useEffect(() => {
+        // Reset tracking when switching trips so we don't celebrate on initial mount
+        if (lastTripIdRef.current !== trip.id) {
+          lastTripIdRef.current = trip.id;
+          prevSettleCountRef.current = settlements.length;
+          return;
+        }
+        if (prevSettleCountRef.current > 0 && settlements.length === 0 && expenses.length > 0) {
+          setCelebrating(true);
+          const t = setTimeout(() => setCelebrating(false), 2700);
+          prevSettleCountRef.current = settlements.length;
+          return () => clearTimeout(t);
+        }
+        prevSettleCountRef.current = settlements.length;
+      }, [settlements.length, expenses.length, trip.id]);
+
+      return (
+        <React.Fragment>
+          <div className="summary" style={{
+            background: `radial-gradient(120% 100% at 0% 0%, ${group.color}28 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}1A 0%, transparent 60%), linear-gradient(140deg, #15151E 0%, #1C1C2C 100%)`,
+            borderColor: `${group.color}40`,
+          }}>
+            <div className="grain" />
+            <button
+              onClick={onOpenActions}
+              aria-label="Trip actions"
+              style={{
+                position: 'absolute', top: 12, right: 12,
+                width: 36, height: 36, borderRadius: 999,
+                background: 'rgba(0,0,0,.25)',
+                color: 'rgba(255,255,255,.8)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,.08)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 2,
+                cursor: 'pointer',
+              }}
+            ><Icon.More /></button>
+            <p className="label" style={{ color: group.color }}>{trip.emoji} {trip.name}</p>
+            {self ? (
+              <React.Fragment>
+                <p className={`net ${Math.abs(youNet) < 0.5 ? 'zero' : youNet > 0 ? 'pos' : 'neg'}`}>
+                  {Math.abs(youNet) < 0.5 ? fmtINR(0) : (youNet > 0 ? '+' : '−') + fmtINR(Math.abs(youNet))}
+                </p>
+                <p className="sub">
+                  {Math.abs(youNet) < 0.5 ? 'Settled in this trip' : youNet > 0 ? 'You are owed in this trip' : 'You owe in this trip'}
+                </p>
+              </React.Fragment>
+            ) : (
+              <React.Fragment>
+                <p className="net" style={{ color: 'var(--text)' }}>{fmtINR(total)}</p>
+                <p className="sub">Total spent · {expenses.length} expense{expenses.length === 1 ? '' : 's'}</p>
+              </React.Fragment>
+            )}
+            <div className="summary-split">
+              <div>
+                <div className="col-label">Expenses</div>
+                <div className="col-amt" style={{ color: 'var(--text)' }}>{expenses.length}</div>
+              </div>
+              <div>
+                <div className="col-label">People</div>
+                <div className="col-amt" style={{ color: 'var(--text)' }}>{balances.length || members.length}</div>
+              </div>
+              <div>
+                <div className="col-label">Spent</div>
+                <div className="col-amt" style={{ color: 'var(--text)' }}>{fmtINR(total)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="tabs">
+            <button className={`tab ${tab === 'expenses' ? 'active' : ''}`} onClick={() => setTab('expenses')}>Expenses</button>
+            <button className={`tab ${tab === 'balances' ? 'active' : ''}`} onClick={() => setTab('balances')}>Balances</button>
+            <button className={`tab ${tab === 'settle' ? 'active' : ''}`}   onClick={() => setTab('settle')}>Settle</button>
+          </div>
+
+          {tab === 'expenses' && <ExpensesTab expenses={expenses} self={self} onEdit={onEditExpense} onReact={onReact} />}
+          {tab === 'balances' && <BalancesTab balances={balances} self={self} expenses={expenses} />}
+          {tab === 'settle'   && <SettleTab settlements={settlements} balances={balances} self={self} onPay={(s) => onPay(s, trip)} />}
+
+          <div className="spacer-fab" />
+
+          {expenses.length >= 2 && <TripRecap trip={trip} group={group} expenses={expenses} balances={balances} />}
+
+          {tab === 'expenses' && members.length > 0 && (
+            <button className="fab" onClick={onAddExpense} aria-label="Add expense"><Icon.Plus /></button>
+          )}
+
+          {celebrating && <Celebration message={`"${trip.name}" is fully settled!`} />}
+        </React.Fragment>
+      );
+    }
+
+    function TripRecap({ trip, group, expenses, balances }) {
+      const stats = useMemo(() => {
+        const total = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+        // Date range
+        const dates = expenses.map((e) => e.expense_date).filter(Boolean).sort();
+        const firstDate = dates[0];
+        const lastDate = dates[dates.length - 1];
+        const dayCount = (firstDate && lastDate)
+          ? Math.max(1, Math.round((new Date(lastDate) - new Date(firstDate)) / 86400000) + 1)
+          : 1;
+
+        // By date for "busiest day"
+        const byDate = new Map();
+        for (const e of expenses) {
+          const k = e.expense_date;
+          byDate.set(k, (byDate.get(k) || 0) + Number(e.amount || 0));
+        }
+        let busiestDay = null;
+        let busiestDayAmt = 0;
+        for (const [k, v] of byDate) if (v > busiestDayAmt) { busiestDayAmt = v; busiestDay = k; }
+
+        // By category
+        const byCat = new Map();
+        for (const e of expenses) byCat.set(e.category || 'other', (byCat.get(e.category || 'other') || 0) + Number(e.amount || 0));
+        let topCat = 'other'; let topCatAmt = 0;
+        for (const [k, v] of byCat) if (v > topCatAmt) { topCatAmt = v; topCat = k; }
+        const topCatPct = total > 0 ? Math.round((topCatAmt / total) * 100) : 0;
+        const topCatInfo = CAT_BY_ID[topCat] || CAT_BY_ID.other;
+
+        // Biggest single expense
+        const biggest = expenses.reduce((m, e) => (Number(e.amount || 0) > Number(m?.amount || 0) ? e : m), null);
+
+        // Biggest spender
+        const paid = new Map();
+        for (const e of expenses) paid.set(e.paid_by, (paid.get(e.paid_by) || 0) + Number(e.amount || 0));
+        let topSpender = null; let topSpenderAmt = 0;
+        for (const [n, v] of paid) if (v > topSpenderAmt) { topSpenderAmt = v; topSpender = n; }
+
+        const memberCount = balances.length || paid.size;
+        const avgPerPerson = memberCount > 0 ? total / memberCount : 0;
+
+        return { total, dayCount, busiestDay, busiestDayAmt, topCat: topCatInfo, topCatPct, topCatAmt, biggest, topSpender, topSpenderAmt, memberCount, avgPerPerson };
+      }, [expenses, balances]);
+
+      const copyRecap = () => {
+        const lines = [
+          `${trip.emoji} ${trip.name} — trip recap`,
+          `${fmtINR(stats.total)} across ${expenses.length} expenses · ${stats.dayCount} day${stats.dayCount === 1 ? '' : 's'}`,
+          stats.topSpender ? `Top spender: ${stats.topSpender} (${fmtINR(stats.topSpenderAmt)})` : null,
+          stats.busiestDay ? `Biggest day: ${fmtDate(stats.busiestDay)} (${fmtINR(stats.busiestDayAmt)})` : null,
+          `Top category: ${stats.topCat.emoji} ${stats.topCat.label} (${stats.topCatPct}%)`,
+          `Avg per person: ${fmtINR(stats.avgPerPerson)}`,
+        ].filter(Boolean);
+        const text = lines.join('\n');
+        try {
+          navigator.clipboard.writeText(text);
+        } catch {
+          // ignore
+        }
+      };
+
+      return (
+        <React.Fragment>
+          <p className="section-title">Trip recap</p>
+          <div className="summary" style={{
+            background: `radial-gradient(120% 100% at 0% 0%, ${group.color}24 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}18 0%, transparent 60%), linear-gradient(140deg, #15151E 0%, #1C1C2C 100%)`,
+            borderColor: `${group.color}40`,
+            padding: 20,
+          }}>
+            <div className="grain" />
+            <div style={{ position: 'relative' }}>
+              <p className="label" style={{ color: group.color }}>Recap · {stats.dayCount} day{stats.dayCount === 1 ? '' : 's'}</p>
+              <p className="net" style={{ color: 'var(--text)' }}>{fmtINR(stats.total)}</p>
+              <p className="sub">across {expenses.length} expense{expenses.length === 1 ? '' : 's'} · avg {fmtINR(stats.avgPerPerson)}/person</p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 18 }}>
+                {stats.topSpender && (
+                  <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Top spender</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                      <Avatar name={stats.topSpender} size="sm" />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topSpender}</div>
+                        <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>{fmtINR(stats.topSpenderAmt)}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                  <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Top category</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <span style={{ fontSize: 24 }}>{stats.topCat.emoji}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{stats.topCat.label}</div>
+                      <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: 'var(--text-soft)' }}>{stats.topCatPct}% of spend</div>
+                    </div>
+                  </div>
+                </div>
+                {stats.busiestDay && (
+                  <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Biggest day</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8 }}>{fmtDate(stats.busiestDay)}</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>{fmtINR(stats.busiestDayAmt)}</div>
+                  </div>
+                )}
+                {stats.biggest && (
+                  <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Biggest expense</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.biggest.description}</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>{fmtINR(stats.biggest.amount)}</div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                className="btn btn-soft btn-full"
+                onClick={copyRecap}
+                style={{ marginTop: 16 }}
+              >Copy recap to share</button>
+            </div>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    const REACTION_EMOJIS = ['🎉', '👍', '💸', '🔥', '😂', '❤️'];
+
+    // Lightweight reaction bar shown under each expense row.
+    function ReactionBar({ expense, self, onReact }) {
+      const [picking, setPicking] = useState(false);
+      const reactions = (expense.reactions && typeof expense.reactions === 'object') ? expense.reactions : {};
+      // Group by emoji → list of names
+      const grouped = {};
+      for (const [name, emoji] of Object.entries(reactions)) {
+        if (!emoji) continue;
+        if (!grouped[emoji]) grouped[emoji] = [];
+        grouped[emoji].push(name);
+      }
+      const emojiOrder = REACTION_EMOJIS.filter((e) => grouped[e]);
+      const myReaction = self ? reactions[self] : null;
+
+      const stop = (e) => { e.stopPropagation(); };
+
+      const handleReact = (emoji, e) => {
+        e.stopPropagation();
+        setPicking(false);
+        // If user already had this emoji → remove. Otherwise set/replace.
+        const next = { ...reactions };
+        if (myReaction === emoji) delete next[self];
+        else if (self) next[self] = emoji;
+        onReact(expense.id, next);
+      };
+
+      if (emojiOrder.length === 0 && !self) return null;
+
+      return (
+        <div onClick={stop} style={{
+          display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+          marginTop: 8, paddingTop: 8,
+          borderTop: '1px dashed var(--border)',
+        }}>
+          {emojiOrder.map((emoji) => {
+            const names = grouped[emoji];
+            const youReacted = self && names.includes(self);
+            return (
+              <button
+                key={emoji}
+                onClick={(e) => handleReact(emoji, e)}
+                title={names.join(', ')}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '3px 8px', borderRadius: 999,
+                  background: youReacted ? 'rgba(0,229,160,.15)' : 'var(--surface-2)',
+                  border: '1px solid ' + (youReacted ? 'rgba(0,229,160,.4)' : 'var(--border)'),
+                  fontFamily: 'Inter', fontWeight: 600, fontSize: 12,
+                  color: youReacted ? 'var(--primary)' : 'var(--text-soft)',
+                  cursor: 'pointer',
+                }}
+              >
+                <span>{emoji}</span>
+                <span>{names.length}</span>
+              </button>
+            );
+          })}
+          {self && (
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); setPicking((v) => !v); }}
+                aria-label="React"
+                style={{
+                  width: 26, height: 26, borderRadius: 999,
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-mute)',
+                  fontFamily: 'Inter', fontWeight: 700, fontSize: 13,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                }}
+              >{picking ? '×' : '+'}</button>
+              {picking && (
+                <div style={{
+                  position: 'absolute', bottom: 'calc(100% + 6px)', right: 0,
+                  display: 'flex', gap: 4,
+                  padding: 6,
+                  background: 'var(--surface-3)',
+                  border: '1px solid var(--border-2)',
+                  borderRadius: 999,
+                  boxShadow: '0 12px 32px rgba(0,0,0,.5)',
+                  zIndex: 5,
+                }}>
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={(e) => handleReact(emoji, e)}
+                      style={{
+                        width: 32, height: 32, borderRadius: 999,
+                        fontSize: 18,
+                        background: myReaction === emoji ? 'rgba(0,229,160,.2)' : 'transparent',
+                        border: 'none', cursor: 'pointer',
+                        transition: 'background .12s ease, transform .12s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >{emoji}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ExpensesTab({ expenses, self, onEdit, onReact }) {
+      const byDate = useMemo(() => {
+        const g = new Map();
+        for (const e of expenses) {
+          if (!g.has(e.expense_date)) g.set(e.expense_date, []);
+          g.get(e.expense_date).push(e);
+        }
+        return [...g.entries()].sort((a, b) => a[0] < b[0] ? 1 : -1);
+      }, [expenses]);
+
+      if (expenses.length === 0) {
+        return (
+          <div className="empty">
+            <div className="emoji-bubble">💸</div>
+            <h3>No expenses yet</h3>
+            <p>Tap the + button to log your first split.</p>
+          </div>
+        );
+      }
+
+      return (
+        <React.Fragment>
+          {byDate.map(([date, items]) => (
+            <React.Fragment key={date}>
+              <p className="section-title">{fmtDate(date)}</p>
+              <div>
+                {items.map((e) => {
+                  const cat = CAT_BY_ID[e.category] || CAT_BY_ID.other;
+                  const splitters = Array.isArray(e.split_among) ? e.split_among : [];
+                  const yl = youLine(e, self);
+                  return (
+                    <div key={e.id} className="exp-row" onClick={() => onEdit(e)} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
+                        <span className="exp-cat">{cat.emoji}</span>
+                        <div className="exp-main">
+                          <p className="exp-desc">{e.description}</p>
+                          <p className="exp-payer">
+                            {e.paid_by === self ? 'You' : e.paid_by} paid {fmtINR(e.amount)} · {splitters.length} split{e.shares && Object.keys(e.shares).length > 0 ? ' · unequal' : ''}
+                          </p>
+                        </div>
+                        {e.image_url && (
+                          <img
+                            src={e.image_url}
+                            alt=""
+                            style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }}
+                          />
+                        )}
+                        <div className="exp-side">
+                          {yl != null ? (
+                            Math.abs(yl) < 0.5 ? (
+                              <React.Fragment>
+                                <div className="you-line zero">—</div>
+                                <div className="you-label">no impact</div>
+                              </React.Fragment>
+                            ) : (
+                              <React.Fragment>
+                                <div className={`you-line ${yl > 0 ? 'pos' : 'neg'}`}>
+                                  {(yl > 0 ? '+' : '−') + fmtINR(Math.abs(yl))}
+                                </div>
+                                <div className="you-label">{yl > 0 ? 'you lent' : 'you owe'}</div>
+                              </React.Fragment>
+                            )
+                          ) : (
+                            <React.Fragment>
+                              <div className="total">total</div>
+                              <div className="total-amt">{fmtINR(e.amount)}</div>
+                            </React.Fragment>
+                          )}
+                        </div>
+                      </div>
+                      <ReactionBar expense={e} self={self} onReact={onReact} />
+                    </div>
+                  );
+                })}
+              </div>
+            </React.Fragment>
+          ))}
+        </React.Fragment>
+      );
+    }
+
+    function BalancesTab({ balances, self, expenses }) {
+      // Compute per-person "paid" and "share" totals. Net = paid - share matches calcBalances.
+      const breakdown = useMemo(() => {
+        const paid = new Map();
+        const share = new Map();
+        const ensure = (m, n) => { if (!m.has(n)) m.set(n, 0); };
+        for (const e of (expenses || [])) {
+          const amt = Number(e.amount) || 0;
+          const shares = expenseShares(e);
+          if (Object.keys(shares).length === 0) continue;
+          ensure(paid, e.paid_by);
+          paid.set(e.paid_by, paid.get(e.paid_by) + amt);
+          for (const [name, s] of Object.entries(shares)) {
+            ensure(share, name);
+            share.set(name, share.get(name) + s);
+          }
+        }
+        const names = new Set([...paid.keys(), ...share.keys()]);
+        const rows = [...names].map((name) => ({
+          name,
+          paid: paid.get(name) || 0,
+          share: share.get(name) || 0,
+          net: (paid.get(name) || 0) - (share.get(name) || 0),
+        })).sort((a, b) => b.paid - a.paid);
+        const maxPaid = rows.reduce((m, r) => Math.max(m, r.paid), 0);
+        const totalPaid = rows.reduce((s, r) => s + r.paid, 0);
+        return { rows, maxPaid, totalPaid };
+      }, [expenses]);
+
+      if (balances.length === 0) {
+        return (
+          <div className="empty">
+            <div className="emoji-bubble">⚖️</div>
+            <h3>Nothing to balance yet</h3>
+            <p>Add expenses to see who owes whom.</p>
+          </div>
+        );
+      }
+
+      const selfRow = self ? breakdown.rows.find((r) => r.name === self) : null;
+      const selfPct = selfRow && breakdown.totalPaid > 0
+        ? Math.round((selfRow.paid / breakdown.totalPaid) * 100)
+        : null;
+
+      return (
+        <React.Fragment>
+          {selfRow && (
+            <div className="summary" style={{ padding: 18, marginTop: 8 }}>
+              <p className="label">You paid</p>
+              <p className="net" style={{ color: 'var(--primary)' }}>{fmtINR(selfRow.paid)}</p>
+              <p className="sub">
+                {selfPct != null ? `${selfPct}% of the trip's ${fmtINR(breakdown.totalPaid)} total` : ' '}
+                {' · share '}{fmtINR(selfRow.share)}
+              </p>
+            </div>
+          )}
+
+          <p className="section-title">Who paid what</p>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-3)',
+            padding: 12,
+          }}>
+            {breakdown.rows.map((r) => {
+              const widthPct = breakdown.maxPaid > 0 ? Math.max(2, (r.paid / breakdown.maxPaid) * 100) : 0;
+              const isSelf = r.name === self;
+              return (
+                <div key={r.name} style={{ padding: '10px 4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <Avatar name={r.name} size="sm" />
+                    <span style={{ fontFamily: 'Manrope', fontWeight: 600, fontSize: 14, flex: 1, color: 'var(--text)' }}>
+                      {isSelf ? `${r.name} (you)` : r.name}
+                    </span>
+                    <span className="amt amt-sm" style={{ color: r.paid > 0 ? 'var(--text)' : 'var(--text-mute)' }}>
+                      {fmtINR(r.paid)}
+                    </span>
+                  </div>
+                  <div style={{
+                    height: 6, borderRadius: 999,
+                    background: 'rgba(255,255,255,.05)',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%', width: widthPct + '%',
+                      background: r.paid > 0
+                        ? (isSelf
+                          ? 'linear-gradient(90deg, var(--primary) 0%, #1BFFB8 100%)'
+                          : 'linear-gradient(90deg, rgba(0,229,160,.5) 0%, rgba(0,229,160,.8) 100%)')
+                        : 'transparent',
+                      borderRadius: 999,
+                      transition: 'width .35s cubic-bezier(.2,.8,.25,1)',
+                    }} />
+                  </div>
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    marginTop: 6,
+                    fontFamily: 'Inter', fontWeight: 500, fontSize: 11,
+                    color: 'var(--text-mute)',
+                  }}>
+                    <span>Share {fmtINR(r.share)}</span>
+                    <span style={{ color: Math.abs(r.net) < 0.5 ? 'var(--text-mute)' : r.net > 0 ? 'var(--primary)' : 'var(--negative)' }}>
+                      Net {Math.abs(r.net) < 0.5 ? fmtINR(0) : (r.net > 0 ? '+' : '−') + fmtINR(Math.abs(r.net))}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="section-title">Net positions</p>
+          <div>
+            {balances.map((b) => {
+              const owes = b.net < -0.5;
+              const gets = b.net > 0.5;
+              const settled = !owes && !gets;
+              const isSelf = b.name === self;
+              return (
+                <div key={b.name} className="balance-row">
+                  <Avatar name={b.name} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="name">{isSelf ? `${b.name} (you)` : b.name}</div>
+                    <div className="status">
+                      {settled ? 'settled up' : gets ? (isSelf ? 'you get back' : 'gets back') : (isSelf ? 'you owe' : 'owes')}
+                    </div>
+                  </div>
+                  <div className={`amt amt-md ${gets ? 'pos' : owes ? 'neg' : 'zero'}`}>
+                    {settled ? fmtINR(0) : (gets ? '+' : '−') + fmtINR(Math.abs(b.net))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    function SettleRow({ s, self, onPay }) {
+      const isYours = self && (s.from === self || s.to === self);
+      const youArePayer = self && s.from === self;
+      return (
+        <div className="settle-row">
+          <Avatar name={s.from} size="sm" />
+          <span className="who">{s.from === self ? 'You' : s.from}</span>
+          <Icon.Arrow className="arrow" />
+          <Avatar name={s.to} size="sm" />
+          <span className="who">{s.to === self ? 'you' : s.to}</span>
+          <span className="pay-amt">{fmtINR(s.amount)}</span>
+          {youArePayer && (
+            <button
+              onClick={() => onPay(s)}
+              style={{
+                fontFamily: 'Manrope', fontWeight: 700, fontSize: 12,
+                color: '#0A1A14', background: 'var(--primary)',
+                padding: '6px 14px', borderRadius: 999,
+                boxShadow: '0 0 0 1px rgba(0,229,160,.4), 0 4px 12px rgba(0,229,160,.3)',
+                marginLeft: 8,
+              }}
+            >Pay</button>
+          )}
+        </div>
+      );
+    }
+
+    function SettleTab({ settlements, balances, self, onPay }) {
+      if (balances.length === 0) {
+        return (
+          <div className="empty">
+            <div className="emoji-bubble">🎯</div>
+            <h3>Nothing to settle</h3>
+            <p>Add expenses to generate settle-up suggestions.</p>
+          </div>
+        );
+      }
+      if (settlements.length === 0) {
+        return (
+          <div className="empty">
+            <div className="emoji-bubble">🎉</div>
+            <h3>All settled!</h3>
+            <p>No transfers needed — everyone's even.</p>
+          </div>
+        );
+      }
+      const yours = self ? settlements.filter((s) => s.from === self || s.to === self) : [];
+      const others = self ? settlements.filter((s) => s.from !== self && s.to !== self) : settlements;
+      return (
+        <React.Fragment>
+          {yours.length > 0 && (
+            <React.Fragment>
+              <p className="section-title">Your transfers</p>
+              <div>
+                {yours.map((s, i) => <SettleRow key={'y' + i} s={s} self={self} onPay={onPay} />)}
+              </div>
+            </React.Fragment>
+          )}
+          {others.length > 0 && (
+            <React.Fragment>
+              <p className="section-title">{yours.length > 0 ? 'Between others' : `${settlements.length} transfer${settlements.length === 1 ? '' : 's'}`}</p>
+              <div>
+                {others.map((s, i) => <SettleRow key={'o' + i} s={s} self={self} onPay={onPay} />)}
+              </div>
+            </React.Fragment>
+          )}
+        </React.Fragment>
+      );
+    }
+
+    // ---------- Sheets ----------
+    function AddGroupSheet({ open, onClose, onCreate }) {
+      const [name, setName] = useState('');
+      const [emoji, setEmoji] = useState(GROUP_EMOJIS[0]);
+      const [color, setColor] = useState(COLORS[0]);
+      useEffect(() => { if (open) { setName(''); setEmoji(GROUP_EMOJIS[0]); setColor(COLORS[0]); } }, [open]);
+      const submit = () => { if (!name.trim()) return; onCreate({ name: name.trim(), emoji, color }); };
+      return (
+        <Sheet open={open} onClose={onClose} title="New group" onSave={submit} saveLabel="Create" canSave={!!name.trim()}>
+          <div className="field">
+            <label className="field-label">Group name</label>
+            <input autoFocus placeholder="Goa Squad" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} />
+          </div>
+          <div className="field">
+            <label className="field-label">Accent color</label>
+            <ColorPicker value={color} onChange={setColor} />
+          </div>
+          <div className="field">
+            <label className="field-label">Emoji</label>
+            <EmojiPicker pool={GROUP_EMOJIS} value={emoji} onChange={setEmoji} />
+          </div>
+        </Sheet>
+      );
+    }
+
+    function AddMemberSheet({ open, onClose, onCreate, existingNames }) {
+      const [name, setName] = useState('');
+      useEffect(() => { if (open) setName(''); }, [open]);
+      const trimmed = name.trim();
+      const taken = existingNames.some((n) => n.toLowerCase() === trimmed.toLowerCase());
+      const canSave = trimmed.length > 0 && !taken;
+      const submit = () => { if (canSave) onCreate(trimmed); };
+      return (
+        <Sheet open={open} onClose={onClose} title="Add member" onSave={submit} saveLabel="Add" canSave={canSave}>
+          <div className="field">
+            <label className="field-label">Name</label>
+            <input autoFocus placeholder="Mustafa" value={name} onChange={(e) => setName(e.target.value)} maxLength={30}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); }} />
+            {taken && <p style={{ color: 'var(--negative)', fontSize: 13, marginTop: 8 }}>A member with this name already exists.</p>}
+          </div>
+        </Sheet>
+      );
+    }
+
+    function AddTripSheet({ open, onClose, onCreate }) {
+      const [name, setName] = useState('');
+      const [emoji, setEmoji] = useState(TRIP_EMOJIS[0]);
+      useEffect(() => { if (open) { setName(''); setEmoji(TRIP_EMOJIS[0]); } }, [open]);
+      const submit = () => { if (!name.trim()) return; onCreate({ name: name.trim(), emoji }); };
+      return (
+        <Sheet open={open} onClose={onClose} title="New trip" onSave={submit} saveLabel="Create" canSave={!!name.trim()}>
+          <div className="field">
+            <label className="field-label">Trip name</label>
+            <input autoFocus placeholder="Goa Dec 2024" value={name} onChange={(e) => setName(e.target.value)} maxLength={50} />
+          </div>
+          <div className="field">
+            <label className="field-label">Emoji</label>
+            <EmojiPicker pool={TRIP_EMOJIS} value={emoji} onChange={setEmoji} />
+          </div>
+        </Sheet>
+      );
+    }
+
+    function SelfPickerSheet({ open, onClose, members, current, onPick }) {
+      return (
+        <Sheet open={open} onClose={onClose} title="Who are you?">
+          <p style={{ color: 'var(--text-soft)', fontSize: 13, marginTop: 0 }}>
+            Pick yourself from the group's members. The app uses this to show personalized "you owe" / "you're owed" amounts.
+          </p>
+          <div className="spacer-1" />
+          <div>
+            {members.map((m) => (
+              <div key={m.id} className="exp-row" onClick={() => { onPick(m.name); onClose(); }}>
+                <Avatar name={m.name} size="lg" />
+                <div className="exp-main">
+                  <p className="exp-desc">{m.name}</p>
+                  {m.name === current && <p className="exp-payer" style={{ color: 'var(--primary)' }}>Currently selected</p>}
+                </div>
+                {m.name === current && <Icon.Check style={{ color: 'var(--primary)' }} />}
+              </div>
+            ))}
+            {current && (
+              <React.Fragment>
+                <div className="spacer-2" />
+                <button className="btn btn-ghost btn-full" onClick={() => { onPick(null); onClose(); }}>Clear selection</button>
+              </React.Fragment>
+            )}
+          </div>
+        </Sheet>
+      );
+    }
+
+    function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, members, self, editing }) {
+      const isEdit = !!editing;
+      const [description, setDescription] = useState('');
+      const [amount, setAmount] = useState('');
+      const [date, setDate] = useState(todayISO());
+      const [category, setCategory] = useState('food');
+      const [paidBy, setPaidBy] = useState(self || members[0]?.name || '');
+      const [splitAmong, setSplitAmong] = useState(members.map((m) => m.name));
+      const [splitMode, setSplitMode] = useState('equal'); // 'equal' | 'percentage' | 'exact'
+      const [shareInputs, setShareInputs] = useState({}); // { name: stringValue }
+      const [imageUrl, setImageUrl] = useState(null);
+      const [photoBusy, setPhotoBusy] = useState(false);
+      const fileInputRef = React.useRef(null);
+
+      // Reset state only when the sheet opens (false→true) OR when switching
+      // between editing different expenses. Crucially we do NOT depend on
+      // `members` or `self` — those references change on every Supabase poll
+      // and would wipe what the user is currently typing.
+      const editingId = editing?.id;
+      useEffect(() => {
+        if (!open) return;
+        if (editing) {
+          setDescription(editing.description || '');
+          setAmount(String(editing.amount ?? ''));
+          setDate(editing.expense_date || todayISO());
+          setCategory(editing.category || 'food');
+          setPaidBy(editing.paid_by || (self || members[0]?.name || ''));
+          setSplitAmong(Array.isArray(editing.split_among) ? [...editing.split_among] : members.map((m) => m.name));
+          setImageUrl(editing.image_url || null);
+          if (editing.shares && Object.keys(editing.shares).length > 0) {
+            setSplitMode('exact');
+            const inputs = {};
+            for (const [k, v] of Object.entries(editing.shares)) inputs[k] = String(v);
+            setShareInputs(inputs);
+          } else {
+            setSplitMode('equal');
+            setShareInputs({});
+          }
+        } else {
+          setDescription(''); setAmount(''); setDate(todayISO()); setCategory('food');
+          setPaidBy(self || members[0]?.name || ''); setSplitAmong(members.map((m) => m.name));
+          setSplitMode('equal'); setShareInputs({});
+          setImageUrl(null);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [open, editingId]);
+
+      const amt = Number(amount);
+
+      // ---- Split-mode helpers ----
+      const switchMode = (next) => {
+        if (next === splitMode) return;
+        if (next === 'equal') {
+          // keep splitAmong as-is (or rebuild from shareInputs keys if needed)
+          if (splitMode !== 'equal' && Object.keys(shareInputs).length > 0) {
+            setSplitAmong(Object.keys(shareInputs));
+          }
+        } else {
+          // Switching to % or exact — seed inputs from current splitAmong members
+          const seeded = {};
+          const targets = splitAmong.length ? splitAmong : members.map((m) => m.name);
+          if (next === 'percentage' && targets.length > 0) {
+            const each = (100 / targets.length).toFixed(2);
+            for (const n of targets) seeded[n] = each;
+          } else if (next === 'exact' && targets.length > 0 && amt > 0) {
+            const each = (amt / targets.length).toFixed(2);
+            for (const n of targets) seeded[n] = each;
+          } else {
+            for (const n of targets) seeded[n] = '';
+          }
+          setShareInputs(seeded);
+        }
+        setSplitMode(next);
+      };
+
+      const toggleSplit = (name) => setSplitAmong((p) => p.includes(name) ? p.filter((n) => n !== name) : [...p, name]);
+
+      const toggleShareMember = (name) => {
+        setShareInputs((prev) => {
+          const next = { ...prev };
+          if (name in next) delete next[name];
+          else next[name] = '';
+          return next;
+        });
+      };
+      const setShareValue = (name, value) => {
+        setShareInputs((prev) => ({ ...prev, [name]: value }));
+      };
+
+      // ---- Compute final shares + validation ----
+      const computed = useMemo(() => {
+        if (splitMode === 'equal') {
+          return { shares: null, splitAmong, sum: amt, error: null };
+        }
+        const sharesNum = {};
+        for (const [k, v] of Object.entries(shareInputs)) {
+          const n = Number(v);
+          if (!isNaN(n) && n > 0) sharesNum[k] = n;
+        }
+        if (splitMode === 'percentage') {
+          const totalPct = Object.values(sharesNum).reduce((s, n) => s + n, 0);
+          if (Math.abs(totalPct - 100) > 0.5) {
+            return { shares: null, splitAmong: Object.keys(sharesNum), sum: totalPct, error: `Percentages total ${totalPct.toFixed(2)}%, must total 100%` };
+          }
+          const rupeeShares = {};
+          for (const [k, pct] of Object.entries(sharesNum)) rupeeShares[k] = +(amt * pct / 100).toFixed(2);
+          return { shares: rupeeShares, splitAmong: Object.keys(rupeeShares), sum: totalPct, error: null };
+        }
+        // exact
+        const totalRs = Object.values(sharesNum).reduce((s, n) => s + n, 0);
+        if (Math.abs(totalRs - amt) > 0.5) {
+          return { shares: null, splitAmong: Object.keys(sharesNum), sum: totalRs, error: `Amounts total ${fmtINR(totalRs, true)}, must equal ${fmtINR(amt, true)}` };
+        }
+        return { shares: sharesNum, splitAmong: Object.keys(sharesNum), sum: totalRs, error: null };
+      }, [splitMode, splitAmong, shareInputs, amt]);
+
+      const splittersCount = splitMode === 'equal' ? splitAmong.length : Object.keys(shareInputs).length;
+      const isValid =
+        description.trim().length > 0 &&
+        !isNaN(amt) && amt > 0 &&
+        !!paidBy &&
+        splittersCount > 0 &&
+        !!date &&
+        !computed.error;
+
+      const perPerson = (splitMode === 'equal' && isValid) ? amt / splitAmong.length : 0;
+
+      const submit = () => {
+        if (!isValid) return;
+        const payload = {
+          description: description.trim(), amount: amt, paid_by: paidBy,
+          split_among: computed.splitAmong, category, expense_date: date,
+          shares: computed.shares,
+          image_url: imageUrl,
+        };
+        if (isEdit) onUpdate(editing.id, payload);
+        else onCreate(payload);
+      };
+
+      const onPickFile = async (file) => {
+        if (!file) return;
+        setPhotoBusy(true);
+        try {
+          const dataUrl = await compressImage(file);
+          setImageUrl(dataUrl);
+        } catch (e) {
+          alert('Could not load image: ' + (e?.message || e));
+        } finally {
+          setPhotoBusy(false);
+        }
+      };
+
+      return (
+        <Sheet open={open} onClose={onClose} title={isEdit ? 'Edit expense' : 'New expense'} onSave={submit} saveLabel={isEdit ? 'Save' : 'Add'} canSave={isValid}>
+          <div className="field">
+            <label className="field-label">Photo (optional)</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const f = e.target.files && e.target.files[0];
+                onPickFile(f);
+                e.target.value = '';
+              }}
+            />
+            {imageUrl ? (
+              <div style={{
+                position: 'relative',
+                borderRadius: 'var(--r-2)',
+                overflow: 'hidden',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+              }}>
+                <img src={imageUrl} alt="" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', display: 'block' }} />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl(null)}
+                  aria-label="Remove photo"
+                  style={{
+                    position: 'absolute', top: 8, right: 8,
+                    width: 32, height: 32, borderRadius: 999,
+                    background: 'rgba(0,0,0,.6)',
+                    border: '1px solid rgba(255,255,255,.15)',
+                    color: 'white',
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                ><Icon.X /></button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                disabled={photoBusy}
+                style={{
+                  width: '100%',
+                  padding: '20px 14px',
+                  borderRadius: 'var(--r-2)',
+                  border: '1px dashed var(--border-2)',
+                  background: 'var(--surface)',
+                  color: 'var(--text-soft)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  fontFamily: 'Inter', fontWeight: 500, fontSize: 14,
+                  cursor: 'pointer',
+                  opacity: photoBusy ? .5 : 1,
+                }}
+              >
+                <Icon.Camera />
+                {photoBusy ? 'Compressing…' : 'Attach receipt or food photo'}
+              </button>
+            )}
+          </div>
+          <div className="field">
+            <label className="field-label">Description</label>
+            <input autoFocus placeholder="Dinner at Britto's" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={60} />
+          </div>
+          <div className="field">
+            <label className="field-label">Amount</label>
+            <div className="amount-input-wrap">
+              <input type="number" inputMode="decimal" min="0" step="0.01" placeholder="0" className="amount-input"
+                value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            {amt > 0 && splitAmong.length > 0 && (
+              <p className="split-hint">{fmtINR(perPerson, true)} per person × {splitAmong.length}</p>
+            )}
+          </div>
+          <div className="field">
+            <label className="field-label">Date</label>
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
+          </div>
+          <div className="field">
+            <label className="field-label">Category</label>
+            <div className="chips">
+              {CATEGORIES.map((c) => (
+                <button key={c.id} type="button"
+                  className={`chip selectable ${category === c.id ? 'active soft' : ''}`}
+                  onClick={() => setCategory(c.id)}>
+                  <span>{c.emoji}</span>{c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label className="field-label">Paid by</label>
+            <div className="chips">
+              {members.map((m) => (
+                <button key={m.id} type="button"
+                  className={`chip-member ${paidBy === m.name ? 'selected-pay' : ''}`}
+                  onClick={() => setPaidBy(m.name)}>
+                  <Avatar name={m.name} size="sm" />
+                  {m.name === self ? `${m.name} (you)` : m.name}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
+            <label className="field-label">Split mode</label>
+            <div className="chips">
+              <button type="button" className={`chip selectable ${splitMode === 'equal' ? 'active soft' : ''}`} onClick={() => switchMode('equal')}>Equal</button>
+              <button type="button" className={`chip selectable ${splitMode === 'percentage' ? 'active soft' : ''}`} onClick={() => switchMode('percentage')}>By %</button>
+              <button type="button" className={`chip selectable ${splitMode === 'exact' ? 'active soft' : ''}`} onClick={() => switchMode('exact')}>Exact ₹</button>
+            </div>
+          </div>
+
+          {splitMode === 'equal' ? (
+            <div className="field">
+              <label className="field-label">Split among ({splitAmong.length})</label>
+              <div className="chips">
+                {members.map((m) => (
+                  <button key={m.id} type="button"
+                    className={`chip-member ${splitAmong.includes(m.name) ? 'active' : ''}`}
+                    onClick={() => toggleSplit(m.name)}>
+                    <Avatar name={m.name} size="sm" />
+                    {m.name === self ? `${m.name} (you)` : m.name}
+                  </button>
+                ))}
+              </div>
+              <p className="split-hint">Equal split between {splitAmong.length || 0} {splitAmong.length === 1 ? 'person' : 'people'}.</p>
+            </div>
+          ) : (
+            <div className="field">
+              <label className="field-label">
+                {splitMode === 'percentage' ? 'Set percentage per person' : 'Set exact ₹ per person'}
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {members.map((m) => {
+                  const included = m.name in shareInputs;
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 12px',
+                        background: 'var(--surface)',
+                        border: '1px solid ' + (included ? 'rgba(0,229,160,.35)' : 'var(--border)'),
+                        borderRadius: 'var(--r-2)',
+                        opacity: included ? 1 : .55,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleShareMember(m.name)}
+                        style={{
+                          width: 22, height: 22, borderRadius: 6,
+                          border: '2px solid ' + (included ? 'var(--primary)' : 'var(--border-2)'),
+                          background: included ? 'var(--primary)' : 'transparent',
+                          color: '#0A1A14',
+                          fontFamily: 'Manrope', fontWeight: 800, fontSize: 14,
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                        aria-label={included ? `Exclude ${m.name}` : `Include ${m.name}`}
+                      >{included ? '✓' : ''}</button>
+                      <Avatar name={m.name} size="sm" />
+                      <span style={{ fontFamily: 'Manrope', fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {m.name === self ? `${m.name} (you)` : m.name}
+                      </span>
+                      <div style={{ position: 'relative', width: 100, flexShrink: 0 }}>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step={splitMode === 'percentage' ? '0.01' : '1'}
+                          placeholder="0"
+                          value={shareInputs[m.name] ?? ''}
+                          onChange={(e) => {
+                            setShareValue(m.name, e.target.value);
+                            // auto-include if user types
+                            if (!(m.name in shareInputs) && e.target.value) toggleShareMember(m.name);
+                          }}
+                          disabled={!included}
+                          style={{
+                            padding: '8px 28px 8px 10px',
+                            fontFamily: 'Manrope', fontWeight: 700, fontSize: 14,
+                            textAlign: 'right',
+                          }}
+                        />
+                        <span style={{
+                          position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+                          color: 'var(--text-mute)', fontFamily: 'Manrope', fontWeight: 600, fontSize: 13,
+                          pointerEvents: 'none',
+                        }}>{splitMode === 'percentage' ? '%' : '₹'}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="split-hint" style={{ color: computed.error ? 'var(--negative)' : 'var(--primary)' }}>
+                {computed.error
+                  ? computed.error
+                  : splitMode === 'percentage'
+                    ? `Totals 100% across ${Object.keys(shareInputs).length} ${Object.keys(shareInputs).length === 1 ? 'person' : 'people'}`
+                    : `Totals ${fmtINR(amt, true)} across ${Object.keys(shareInputs).length} ${Object.keys(shareInputs).length === 1 ? 'person' : 'people'}`
+                }
+              </p>
+            </div>
+          )}
+          {isEdit && onDelete && (
+            <React.Fragment>
+              <div className="spacer-3" />
+              <button className="btn btn-danger btn-full" onClick={() => onDelete(editing)}>
+                <Icon.Trash /> Delete this expense
+              </button>
+            </React.Fragment>
+          )}
+          <div className="spacer-2" />
+        </Sheet>
+      );
+    }
+
+    function CalculatorSheet({ open, onClose }) {
+      const [display, setDisplay] = useState('0');
+      const [prev, setPrev] = useState(null);   // previous operand (number) or null
+      const [op, setOp] = useState(null);       // pending operator: +, -, ×, ÷
+      const [justComputed, setJustComputed] = useState(false);
+
+      useEffect(() => {
+        if (open) {
+          setDisplay('0'); setPrev(null); setOp(null); setJustComputed(false);
+        }
+      }, [open]);
+
+      const compute = (a, b, operator) => {
+        switch (operator) {
+          case '+': return a + b;
+          case '−': return a - b;
+          case '×': return a * b;
+          case '÷': return b === 0 ? null : a / b;
+          default: return b;
+        }
+      };
+
+      const pressDigit = (d) => {
+        if (justComputed) {
+          setDisplay(d);
+          setJustComputed(false);
+          return;
+        }
+        setDisplay((cur) => (cur === '0' ? d : cur + d));
+      };
+      const pressDot = () => {
+        if (justComputed) { setDisplay('0.'); setJustComputed(false); return; }
+        setDisplay((cur) => cur.includes('.') ? cur : cur + '.');
+      };
+      const pressOp = (next) => {
+        const current = Number(display);
+        if (prev != null && op && !justComputed) {
+          const result = compute(prev, current, op);
+          if (result == null) { setDisplay('Error'); setPrev(null); setOp(null); return; }
+          setDisplay(formatNum(result));
+          setPrev(result);
+        } else {
+          setPrev(current);
+        }
+        setOp(next);
+        setJustComputed(true);
+      };
+      const pressEquals = () => {
+        if (prev == null || op == null) return;
+        const current = Number(display);
+        const result = compute(prev, current, op);
+        if (result == null) { setDisplay('Error'); setPrev(null); setOp(null); return; }
+        setDisplay(formatNum(result));
+        setPrev(null);
+        setOp(null);
+        setJustComputed(true);
+      };
+      const pressClear = () => { setDisplay('0'); setPrev(null); setOp(null); setJustComputed(false); };
+      const pressBack = () => {
+        if (justComputed || display === 'Error') { pressClear(); return; }
+        setDisplay((cur) => cur.length <= 1 ? '0' : cur.slice(0, -1));
+      };
+      const pressSign = () => {
+        if (display === '0' || display === 'Error') return;
+        setDisplay((cur) => cur.startsWith('-') ? cur.slice(1) : '-' + cur);
+      };
+
+      const formatNum = (n) => {
+        if (!isFinite(n)) return 'Error';
+        // Trim trailing zeros, max 8 decimals
+        const s = (Math.round(n * 1e8) / 1e8).toString();
+        return s;
+      };
+
+      // Pretty INR-style preview under the raw number
+      const previewINR = useMemo(() => {
+        const n = Number(display);
+        if (!isFinite(n) || display === 'Error') return '';
+        return fmtINR(n, true);
+      }, [display]);
+
+      const btnStyle = (variant) => ({
+        height: 56,
+        borderRadius: 14,
+        fontFamily: 'Manrope', fontWeight: 700, fontSize: 18,
+        background: variant === 'op' ? 'rgba(0,229,160,.1)' :
+                    variant === 'eq' ? 'var(--primary)' :
+                    variant === 'fn' ? 'var(--surface-2)' :
+                    'var(--surface)',
+        color: variant === 'eq' ? '#0A1A14' :
+               variant === 'op' ? 'var(--primary)' :
+               'var(--text)',
+        border: '1px solid ' + (variant === 'op' ? 'rgba(0,229,160,.25)' : 'var(--border)'),
+        transition: 'transform .08s ease, background .15s ease',
+      });
+
+      const Btn = ({ children, onClick, variant }) => (
+        <button
+          type="button"
+          onClick={onClick}
+          style={btnStyle(variant)}
+          onTouchStart={(e) => { e.currentTarget.style.transform = 'scale(.96)'; }}
+          onTouchEnd={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >{children}</button>
+      );
+
+      return (
+        <Sheet open={open} onClose={onClose} title="Calculator">
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-3)',
+            padding: '20px 18px',
+            marginBottom: 16,
+            textAlign: 'right',
+          }}>
+            <div style={{
+              fontFamily: 'Inter', fontWeight: 500, fontSize: 12,
+              color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em',
+              minHeight: 16,
+            }}>
+              {prev != null && op ? `${formatNum(prev)} ${op}` : ' '}
+            </div>
+            <div style={{
+              fontFamily: 'Manrope', fontWeight: 800,
+              fontSize: 42, letterSpacing: '-.03em',
+              color: display === 'Error' ? 'var(--negative)' : 'var(--text)',
+              wordBreak: 'break-all',
+              lineHeight: 1.1,
+            }}>{display}</div>
+            {display !== 'Error' && Number(display) !== 0 && (
+              <div style={{
+                fontFamily: 'Inter', fontWeight: 500, fontSize: 12,
+                color: 'var(--primary)', marginTop: 4,
+              }}>{previewINR}</div>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            <Btn variant="fn" onClick={pressClear}>AC</Btn>
+            <Btn variant="fn" onClick={pressSign}>±</Btn>
+            <Btn variant="fn" onClick={pressBack}>⌫</Btn>
+            <Btn variant="op" onClick={() => pressOp('÷')}>÷</Btn>
+
+            <Btn onClick={() => pressDigit('7')}>7</Btn>
+            <Btn onClick={() => pressDigit('8')}>8</Btn>
+            <Btn onClick={() => pressDigit('9')}>9</Btn>
+            <Btn variant="op" onClick={() => pressOp('×')}>×</Btn>
+
+            <Btn onClick={() => pressDigit('4')}>4</Btn>
+            <Btn onClick={() => pressDigit('5')}>5</Btn>
+            <Btn onClick={() => pressDigit('6')}>6</Btn>
+            <Btn variant="op" onClick={() => pressOp('−')}>−</Btn>
+
+            <Btn onClick={() => pressDigit('1')}>1</Btn>
+            <Btn onClick={() => pressDigit('2')}>2</Btn>
+            <Btn onClick={() => pressDigit('3')}>3</Btn>
+            <Btn variant="op" onClick={() => pressOp('+')}>+</Btn>
+
+            <button
+              type="button"
+              onClick={() => pressDigit('0')}
+              style={{ ...btnStyle(), gridColumn: 'span 2' }}
+            >0</button>
+            <Btn onClick={pressDot}>.</Btn>
+            <Btn variant="eq" onClick={pressEquals}>=</Btn>
+          </div>
+
+          <p style={{ color: 'var(--text-mute)', fontSize: 11, textAlign: 'center', marginTop: 14 }}>
+            Quick math while splitting bills. Result auto-formats in ₹.
+          </p>
+        </Sheet>
+      );
+    }
+
+    function UpiPaySheet({ open, onClose, transfer, knownVpa, tripName, onSaveVpa, toast }) {
+      const [vpa, setVpa] = useState(knownVpa || '');
+      // Only reset when sheet opens (false→true) or when targeting a different recipient.
+      // Polling-driven re-renders must not wipe what the user just typed.
+      const transferKey = transfer ? `${transfer.from}->${transfer.to}@${transfer.amount}` : null;
+      useEffect(() => {
+        if (open) setVpa(knownVpa || '');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [open, transferKey]);
+
+      if (!transfer) return null;
+
+      const cleanVpa = vpa.trim();
+      const validVpa = /^[\w.\-]{2,}@[\w.\-]{2,}$/.test(cleanVpa);
+
+      const pay = () => {
+        if (!validVpa) {
+          toast('Enter a valid UPI ID (e.g. mustafa@oksbi)', 'error');
+          return;
+        }
+        onSaveVpa(transfer.to, cleanVpa);
+        const uri = buildUpiUri({
+          vpa: cleanVpa,
+          name: transfer.to,
+          amount: transfer.amount,
+          note: tripName ? `SplitPro · ${tripName}` : 'SplitPro',
+        });
+        if (isMobile()) {
+          window.location.href = uri;
+        } else {
+          // Desktop: copy URI for user to send to themselves / paste in a UPI client
+          try {
+            navigator.clipboard.writeText(uri);
+            toast('UPI link copied — open on your phone to pay', 'success');
+          } catch {
+            window.open(uri, '_blank');
+          }
+        }
+        onClose();
+      };
+
+      const copyUri = () => {
+        if (!validVpa) return;
+        const uri = buildUpiUri({ vpa: cleanVpa, name: transfer.to, amount: transfer.amount, note: tripName ? `SplitPro · ${tripName}` : 'SplitPro' });
+        try {
+          navigator.clipboard.writeText(uri);
+          onSaveVpa(transfer.to, cleanVpa);
+          toast('UPI link copied to clipboard', 'success');
+        } catch { toast('Copy failed', 'error'); }
+      };
+
+      return (
+        <Sheet open={open} onClose={onClose} title="Pay via UPI">
+          <div className="summary" style={{ padding: 18, marginBottom: 16 }}>
+            <p className="label">{transfer.from} pays {transfer.to}</p>
+            <p className="net pos" style={{ marginTop: 8 }}>{fmtINR(transfer.amount)}</p>
+          </div>
+
+          <div className="field">
+            <label className="field-label">{transfer.to}'s UPI ID</label>
+            <input
+              autoFocus
+              placeholder="e.g. mustafa@oksbi"
+              value={vpa}
+              onChange={(e) => setVpa(e.target.value)}
+              inputMode="email"
+              spellCheck="false"
+              autoCapitalize="none"
+            />
+            <p className="split-hint" style={{ color: 'var(--text-mute)' }}>
+              Saved for {transfer.to} so you won't need to ask again.
+            </p>
+          </div>
+
+          <div className="spacer-1" />
+          <button className="btn btn-primary btn-full" onClick={pay} disabled={!validVpa}>
+            {isMobile() ? 'Open UPI app' : 'Copy UPI link'}
+          </button>
+
+          {isMobile() && (
+            <React.Fragment>
+              <div className="spacer-1" />
+              <button className="btn btn-ghost btn-full" onClick={copyUri} disabled={!validVpa}>
+                Copy link instead
+              </button>
+            </React.Fragment>
+          )}
+
+          <p style={{ color: 'var(--text-mute)', fontSize: 11, textAlign: 'center', marginTop: 14 }}>
+            Opens GPay / PhonePe / Paytm / any UPI app with the amount pre-filled. You still confirm and PIN inside the app.
+          </p>
+        </Sheet>
+      );
+    }
+
+    function ConfirmSheet({ open, onClose, onConfirm, title, message, confirmLabel = 'Delete' }) {
+      return (
+        <Sheet open={open} onClose={onClose} title={title}>
+          <p style={{ color: 'var(--text-soft)', marginTop: 4, fontSize: 14 }}>{message}</p>
+          <div className="spacer-2" />
+          <button className="btn btn-danger btn-full" onClick={onConfirm}>{confirmLabel}</button>
+          <div className="spacer-1" />
+          <button className="btn btn-ghost btn-full" onClick={onClose}>Cancel</button>
+          <div className="spacer-1" />
+        </Sheet>
+      );
+    }
+
+    const SUPABASE_SQL = `-- Paste in Supabase → SQL Editor → Run
+create table if not exists groups (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  emoji text not null default '👥',
+  color text not null default '#0D9488',
+  created_at timestamptz default now()
+);
+create table if not exists members (
+  id uuid default gen_random_uuid() primary key,
+  group_id uuid references groups(id) on delete cascade,
+  name text not null,
+  created_at timestamptz default now()
+);
+create table if not exists trips (
+  id uuid default gen_random_uuid() primary key,
+  group_id uuid references groups(id) on delete cascade,
+  name text not null,
+  emoji text not null default '🏖️',
+  created_at timestamptz default now()
+);
+create table if not exists expenses (
+  id uuid default gen_random_uuid() primary key,
+  trip_id uuid references trips(id) on delete cascade,
+  description text not null,
+  amount numeric(12,2) not null,
+  paid_by text not null,
+  split_among text[] not null default '{}',
+  category text not null default 'other',
+  expense_date date not null,
+  created_at timestamptz default now()
+);
+alter table groups   disable row level security;
+alter table members  disable row level security;
+alter table trips    disable row level security;
+alter table expenses disable row level security;
+
+-- Polish columns (safe to re-run anytime).
+alter table expenses add column if not exists shares jsonb;
+alter table expenses add column if not exists reactions jsonb;
+alter table expenses add column if not exists image_url text;`;
+
+    function SupabaseSetupSheet({ open, onClose, onConnect, onDisconnect, config, mode, toast }) {
+      const [url, setUrl] = useState(config?.url || '');
+      const [key, setKey] = useState(config?.key || '');
+      const [testing, setTesting] = useState(false);
+      const [showSql, setShowSql] = useState(false);
+
+      useEffect(() => {
+        // Reset only when sheet opens. `config` may change mid-typing via
+        // realtime updates and would otherwise wipe user input.
+        if (open) { setUrl(config?.url || ''); setKey(config?.key || ''); setTesting(false); setShowSql(false); }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [open]);
+
+      const test = async () => {
+        if (!url || !key) return;
+        setTesting(true);
+        try {
+          const ok = await DB.testConnection(url.trim(), key.trim());
+          if (ok) {
+            await onConnect(url.trim(), key.trim());
+            onClose();
+          }
+        } finally {
+          setTesting(false);
+        }
+      };
+
+      const copySql = () => {
+        try {
+          navigator.clipboard.writeText(SUPABASE_SQL);
+          toast('SQL copied to clipboard', 'success');
+        } catch {
+          toast('Copy failed — please select and copy manually', 'error');
+        }
+      };
+
+      return (
+        <Sheet open={open} onClose={onClose} title="Supabase sync">
+          {mode === 'supabase' && (
+            <div className="summary" style={{ padding: 16, marginBottom: 12 }}>
+              <p className="label" style={{ color: 'var(--primary)' }}>● Connected</p>
+              <p className="sub" style={{ marginTop: 6 }}>Real-time sync is active. Your group sees changes instantly.</p>
+            </div>
+          )}
+
+          <p style={{ color: 'var(--text-soft)', fontSize: 13, marginTop: 0 }}>
+            Connect to a free Supabase project to sync your group's expenses across phones in real-time.
+          </p>
+
+          <div className="spacer-2" />
+          <p className="section-title" style={{ margin: '0 0 8px' }}>Step 1 — Create the database</p>
+          <button className="btn btn-ghost btn-full" onClick={() => setShowSql((v) => !v)}>
+            {showSql ? 'Hide SQL' : 'Show schema SQL'}
+          </button>
+          {showSql && (
+            <React.Fragment>
+              <div className="spacer-1" />
+              <div className="code-block">{SUPABASE_SQL}</div>
+              <div className="spacer-1" />
+              <button className="btn btn-soft btn-full" onClick={copySql}>Copy SQL</button>
+              <p style={{ color: 'var(--text-mute)', fontSize: 12, marginTop: 8 }}>
+                Run this in Supabase → SQL Editor, then enable Realtime on all four tables (Database → Replication).
+              </p>
+            </React.Fragment>
+          )}
+
+          <div className="spacer-3" />
+          <p className="section-title" style={{ margin: '0 0 8px' }}>Step 2 — Paste your credentials</p>
+          <div className="field">
+            <label className="field-label">Project URL</label>
+            <input placeholder="https://xxxx.supabase.co" value={url} onChange={(e) => setUrl(e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="field-label">anon public key</label>
+            <input placeholder="eyJ..." value={key} onChange={(e) => setKey(e.target.value)} />
+          </div>
+
+          <button
+            className="btn btn-primary btn-full"
+            onClick={test}
+            disabled={!url || !key || testing}
+          >
+            {testing ? 'Testing…' : (mode === 'supabase' ? 'Reconnect' : 'Test & Connect')}
+          </button>
+
+          {mode === 'supabase' && (
+            <React.Fragment>
+              <div className="spacer-2" />
+              <button className="btn btn-ghost btn-full" onClick={() => { onDisconnect(); onClose(); }}>
+                Disconnect (use local only)
+              </button>
+            </React.Fragment>
+          )}
+
+          <p style={{ color: 'var(--text-mute)', fontSize: 11, textAlign: 'center', marginTop: 16 }}>
+            Tip: share the URL + anon key with each friend in your group so they can connect to the same database.
+          </p>
+        </Sheet>
+      );
+    }
+
+    function SettingsSheet({ open, onClose, mode, supaConfig, onOpenSupabase, onResetAll }) {
+      return (
+        <Sheet open={open} onClose={onClose} title="Settings">
+          <div className="settings-item" onClick={onOpenSupabase} style={{ cursor: 'pointer' }}>
+            <div>
+              <div className="label">Supabase sync</div>
+              <div className="desc">
+                {mode === 'supabase' ? 'Connected · real-time sync active' : 'Tap to connect for real-time sync'}
+              </div>
+            </div>
+            <span className={mode === 'supabase' ? 'badge-ok' : 'badge-warn'}>
+              {mode === 'supabase' ? <React.Fragment><Icon.Sync /> Live</React.Fragment> : 'Set up'}
+            </span>
+          </div>
+
+          <div className="settings-item">
+            <div>
+              <div className="label">Currency</div>
+              <div className="desc">en-IN formatting</div>
+            </div>
+            <span style={{ fontFamily: 'Manrope', fontWeight: 700, color: 'var(--primary)' }}>₹ INR</span>
+          </div>
+
+          <div className="settings-item">
+            <div>
+              <div className="label">Storage</div>
+              <div className="desc">{mode === 'supabase' ? 'Supabase Postgres' : 'localStorage on this device'}</div>
+            </div>
+          </div>
+
+          <div className="spacer-3" />
+          <button className="btn btn-danger btn-full" onClick={onResetAll}>Reset all data</button>
+          <p style={{ color: 'var(--text-mute)', fontSize: 12, textAlign: 'center', marginTop: 10 }}>
+            Permanently deletes everything in {mode === 'supabase' ? 'Supabase' : 'localStorage'}.
+          </p>
+        </Sheet>
+      );
+    }
+
+    function App() {
+      const [snap, setSnap] = useState(DB.snapshot());
+      const [mode, setMode] = useState(DB.getMode ? DB.getMode() : 'local');
+      const [supaConfig, setSupaConfig] = useState(DB.getConfig ? DB.getConfig() : null);
+
+      useEffect(() => DB.subscribe((s) => {
+        setSnap(s);
+        if (DB.getMode) setMode(DB.getMode());
+        if (DB.getConfig) setSupaConfig(DB.getConfig());
+      }), []);
+
+      const [selfMap, setSelfMap] = useState(loadSelf());
+      const persistSelf = useCallback((m) => { saveSelf(m); setSelfMap(m); }, []);
+
+      const [upiMap, setUpiMap] = useState(loadUpiMap());
+      const persistUpi = useCallback((m) => { saveUpiMap(m); setUpiMap(m); }, []);
+
+      const [view, setView] = useState({ name: 'groups' });
+      const [sheet, setSheet] = useState(null);
+      const [selfPickerOpen, setSelfPickerOpen] = useState(false);
+      const [supabaseOpen, setSupabaseOpen] = useState(false);
+      const [upiPay, setUpiPay] = useState(null); // { transfer, trip }
+      const [calcOpen, setCalcOpen] = useState(false);
+      const [actionsOpen, setActionsOpen] = useState(null); // 'group' | 'trip' | null
+      const [confirm, setConfirm] = useState(null);
+      const [settingsOpen, setSettingsOpen] = useState(false);
+      const { toasts, push: toast } = useToasts();
+
+      const groups = useMemo(() => DB.getGroups(), [snap]);
+      const currentGroup = useMemo(() => {
+        if (view.name === 'group' || view.name === 'trip') return groups.find((g) => g.id === view.groupId) || null;
+        return null;
+      }, [view, groups]);
+      const currentGroupMembers = useMemo(() => currentGroup ? DB.getMembers(currentGroup.id) : [], [currentGroup, snap]);
+      const currentGroupTrips = useMemo(() => currentGroup ? DB.getTrips(currentGroup.id) : [], [currentGroup, snap]);
+      const currentTrip = useMemo(() => {
+        if (view.name !== 'trip' || !currentGroup) return null;
+        return currentGroupTrips.find((t) => t.id === view.tripId) || null;
+      }, [view, currentGroup, currentGroupTrips]);
+      const currentTripExpenses = useMemo(() => currentTrip ? DB.getExpenses(currentTrip.id) : [], [currentTrip, snap]);
+      const currentSelf = currentGroup ? selfMap[currentGroup.id] : null;
+
+      // Auto-pick self if a group has exactly one member
+      useEffect(() => {
+        if (currentGroup && !currentSelf && currentGroupMembers.length === 1) {
+          persistSelf({ ...selfMap, [currentGroup.id]: currentGroupMembers[0].name });
+        }
+      }, [currentGroup, currentSelf, currentGroupMembers, selfMap, persistSelf]);
+
+      // ---------- Aggregates ----------
+      const groupSummaries = useMemo(() => {
+        const out = {};
+        for (const g of (snap.groups || [])) {
+          const myName = selfMap[g.id];
+          const tripIds = (snap.trips || []).filter((t) => t.group_id === g.id).map((t) => t.id);
+          const tripExpenses = (snap.expenses || []).filter((e) => tripIds.includes(e.trip_id));
+          const totalSpent = tripExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+          let net = 0;
+          if (myName) for (const e of tripExpenses) net += youLine(e, myName) || 0;
+          out[g.id] = { totalSpent, net, hasSelf: !!myName };
+        }
+        return out;
+      }, [snap, selfMap]);
+
+      const tripSummaries = useMemo(() => {
+        const out = {};
+        if (!currentGroup) return out;
+        const myName = selfMap[currentGroup.id];
+        for (const t of currentGroupTrips) {
+          const expenses = (snap.expenses || []).filter((e) => e.trip_id === t.id);
+          const totalSpent = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+          let net = 0;
+          if (myName) for (const e of expenses) net += youLine(e, myName) || 0;
+          out[t.id] = { totalSpent, net, hasSelf: !!myName };
+        }
+        return out;
+      }, [snap, currentGroup, currentGroupTrips, selfMap]);
+
+      useEffect(() => {
+        if (view.name === 'group' && !currentGroup) { setView({ name: 'groups' }); toast('Group was deleted', 'error'); }
+        else if (view.name === 'trip' && (!currentGroup || !currentTrip)) {
+          if (currentGroup) { setView({ name: 'group', groupId: currentGroup.id }); toast('Trip was deleted', 'error'); }
+          else { setView({ name: 'groups' }); toast('Group was deleted', 'error'); }
+        }
+      }, [view.name, currentGroup, currentTrip, toast]);
+
+      // ---------- Mutations ----------
+      // Wrap async mutations so any backend error surfaces as a toast (and the
+      // sheet still closes). Without this, a Supabase rejection silently kills
+      // the click and leaves the user thinking nothing happened.
+      const safeMutate = async (label, fn) => {
+        try {
+          return await fn();
+        } catch (e) {
+          console.error(label + ' failed:', e);
+          const msg = (e && (e.message || e.error_description || e.hint)) || String(e);
+          toast(`${label} failed: ${msg}`, 'error');
+          throw e;
+        }
+      };
+
+      const createGroup = async (g) => {
+        try {
+          const c = await safeMutate('Create group', () => DB.addGroup(g));
+          setSheet(null);
+          toast(`"${c.name}" created`, 'success');
+        } catch {}
+      };
+      const addMember = async (name) => {
+        try {
+          const m = await safeMutate('Add member', () => DB.addMember(currentGroup.id, name));
+          setSheet(null);
+          toast(`${name} added`, 'success');
+          if (!currentSelf && currentGroupMembers.length === 0) {
+            persistSelf({ ...selfMap, [currentGroup.id]: m.name });
+          }
+        } catch {}
+      };
+      const removeMember = (m) => setConfirm({
+        title: `Remove ${m.name}?`,
+        message: `Past expenses with ${m.name} stay in history. They won't appear in new expense forms.`,
+        confirmLabel: 'Remove',
+        onConfirm: async () => {
+          try {
+            await safeMutate('Remove member', () => DB.deleteMember(m.id));
+            if (currentSelf === m.name) {
+              const next = { ...selfMap }; delete next[currentGroup.id]; persistSelf(next);
+            }
+            toast(`${m.name} removed`, 'success');
+            setConfirm(null);
+          } catch { setConfirm(null); }
+        },
+      });
+      const createTrip = async (t) => {
+        try {
+          const c = await safeMutate('Create trip', () => DB.addTrip(currentGroup.id, t));
+          setSheet(null);
+          toast(`"${c.name}" created`, 'success');
+        } catch {}
+      };
+      const createExpense = async (e) => {
+        try {
+          await safeMutate('Add expense', () => DB.addExpense({ trip_id: currentTrip.id, ...e }));
+          setSheet(null);
+          toast(`Added ${fmtINR(e.amount)} expense`, 'success');
+        } catch {}
+      };
+      const editExpense = (e) => setSheet({ kind: 'expense', editing: e });
+      const updateExpense = async (id, patch) => {
+        try {
+          await safeMutate('Update expense', () => DB.updateExpense(id, patch));
+          setSheet(null);
+          toast('Expense updated', 'success');
+        } catch {}
+      };
+      const removeExpense = (e) => setConfirm({
+        title: 'Delete this expense?',
+        message: `"${e.description}" — ${fmtINR(e.amount)} paid by ${e.paid_by}.`,
+        confirmLabel: 'Delete',
+        onConfirm: async () => {
+          try {
+            await safeMutate('Delete expense', () => DB.deleteExpense(e.id));
+            setSheet(null);
+            toast('Expense deleted', 'success');
+            setConfirm(null);
+          } catch { setConfirm(null); }
+        },
+      });
+      const removeTrip = () => setConfirm({
+        title: `Delete "${currentTrip.name}"?`,
+        message: `Removes the trip and all ${currentTripExpenses.length} expense${currentTripExpenses.length === 1 ? '' : 's'} inside.`,
+        confirmLabel: 'Delete trip',
+        onConfirm: async () => {
+          try {
+            const n = currentTrip.name;
+            await safeMutate('Delete trip', () => DB.deleteTrip(currentTrip.id));
+            toast(`"${n}" deleted`, 'success');
+            setConfirm(null);
+          } catch { setConfirm(null); }
+        },
+      });
+      const removeGroup = () => setConfirm({
+        title: `Delete "${currentGroup.name}"?`,
+        message: `Removes the group, ${currentGroupMembers.length} member${currentGroupMembers.length === 1 ? '' : 's'}, ${currentGroupTrips.length} trip${currentGroupTrips.length === 1 ? '' : 's'}, and every expense inside.`,
+        confirmLabel: 'Delete group',
+        onConfirm: async () => {
+          try {
+            const id = currentGroup.id; const n = currentGroup.name;
+            await safeMutate('Delete group', () => DB.deleteGroup(id));
+            const next = { ...selfMap }; delete next[id]; persistSelf(next);
+            toast(`"${n}" deleted`, 'success');
+            setConfirm(null);
+          } catch { setConfirm(null); }
+        },
+      });
+      const resetAll = () => {
+        setSettingsOpen(false);
+        setConfirm({
+          title: 'Reset all data?',
+          message: mode === 'supabase'
+            ? 'Deletes every group, member, trip and expense in your Supabase database. Affects everyone connected. Cannot be undone.'
+            : 'Deletes every group, member, trip and expense from this device. Cannot be undone.',
+          confirmLabel: 'Reset everything',
+          onConfirm: async () => {
+            await DB.resetAll();
+            persistSelf({});
+            setView({ name: 'groups' });
+            toast('All data cleared', 'success');
+            setConfirm(null);
+          },
+        });
+      };
+      const onPay = (transfer, trip) => setUpiPay({ transfer, trip });
+      const saveVpa = (name, vpa) => persistUpi({ ...upiMap, [name]: vpa });
+      const reactToExpense = async (expenseId, nextReactions) => {
+        try {
+          await safeMutate('React', () => DB.updateExpense(expenseId, { reactions: nextReactions }));
+        } catch {}
+      };
+
+      const pickSelf = (name) => {
+        if (!currentGroup) return;
+        const next = { ...selfMap };
+        if (name) next[currentGroup.id] = name; else delete next[currentGroup.id];
+        persistSelf(next);
+        toast(name ? `You're set as ${name}` : 'Self cleared', 'success');
+      };
+
+      const connectSupabase = async (url, key) => {
+        try {
+          await DB.connectSupabase(url, key);
+          toast('Connected to Supabase', 'success');
+        } catch (e) {
+          toast('Connection failed: ' + (e.message || e), 'error');
+        }
+      };
+      const disconnectSupabase = async () => {
+        await DB.disconnect();
+        toast('Disconnected — using local storage', 'success');
+      };
+
+      let headerProps;
+      const baseHeader = { onCalc: () => setCalcOpen(true), onSettings: () => setSettingsOpen(true), syncStatus: mode === 'supabase' ? 'live' : null };
+      if (view.name === 'groups')      headerProps = { ...baseHeader, title: 'SplitPro', subtitle: 'Split bills in ₹' };
+      else if (view.name === 'group')  headerProps = { ...baseHeader, title: currentGroup?.name || 'Group', subtitle: null, onBack: () => setView({ name: 'groups' }) };
+      else                              headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: currentGroup?.name, onBack: () => setView({ name: 'group', groupId: currentGroup.id }) };
+
+      return (
+        <div className="app">
+          <Header {...headerProps} />
+          <main className="app-content">
+            {view.name === 'groups' && (
+              <GroupsView
+                groups={groups}
+                groupSummaries={groupSummaries}
+                onOpen={(id) => setView({ name: 'group', groupId: id })}
+                onAdd={() => setSheet({ kind: 'group' })}
+              />
+            )}
+            {view.name === 'group' && currentGroup && (
+              <GroupView
+                group={currentGroup}
+                members={currentGroupMembers}
+                trips={currentGroupTrips}
+                tripSummaries={tripSummaries}
+                self={currentSelf}
+                onOpenTrip={(id) => setView({ name: 'trip', groupId: currentGroup.id, tripId: id })}
+                onAddMember={() => setSheet({ kind: 'member' })}
+                onRemoveMember={removeMember}
+                onAddTrip={() => setSheet({ kind: 'trip' })}
+                onDeleteGroup={removeGroup}
+                onChangeSelf={() => setSelfPickerOpen(true)}
+                onOpenActions={() => setActionsOpen('group')}
+              />
+            )}
+            {view.name === 'trip' && currentGroup && currentTrip && (
+              <TripView
+                group={currentGroup}
+                trip={currentTrip}
+                members={currentGroupMembers}
+                expenses={currentTripExpenses}
+                self={currentSelf}
+                onAddExpense={() => {
+                  if (currentGroupMembers.length === 0) { toast('Add members first', 'error'); return; }
+                  setSheet({ kind: 'expense' });
+                }}
+                onEditExpense={editExpense}
+                onDeleteTrip={removeTrip}
+                onPay={onPay}
+                onOpenActions={() => setActionsOpen('trip')}
+                onReact={reactToExpense}
+              />
+            )}
+          </main>
+
+          <AddGroupSheet open={sheet?.kind === 'group'} onClose={() => setSheet(null)} onCreate={createGroup} />
+          <AddMemberSheet open={sheet?.kind === 'member'} onClose={() => setSheet(null)} onCreate={addMember} existingNames={currentGroupMembers.map((m) => m.name)} />
+          <AddTripSheet open={sheet?.kind === 'trip'} onClose={() => setSheet(null)} onCreate={createTrip} />
+          <AddExpenseSheet
+            open={sheet?.kind === 'expense'}
+            onClose={() => setSheet(null)}
+            onCreate={createExpense}
+            onUpdate={updateExpense}
+            onDelete={removeExpense}
+            members={currentGroupMembers}
+            self={currentSelf}
+            editing={sheet?.kind === 'expense' ? sheet.editing : null}
+          />
+          <SelfPickerSheet open={selfPickerOpen} onClose={() => setSelfPickerOpen(false)} members={currentGroupMembers} current={currentSelf} onPick={pickSelf} />
+          <CalculatorSheet open={calcOpen} onClose={() => setCalcOpen(false)} />
+          <ActionsSheet
+            open={actionsOpen === 'group'}
+            onClose={() => setActionsOpen(null)}
+            title={currentGroup ? `${currentGroup.emoji} ${currentGroup.name}` : 'Group actions'}
+            actions={[
+              { label: 'Change who I am', icon: <Icon.More />, onClick: () => { setActionsOpen(null); setSelfPickerOpen(true); } },
+              { label: 'Delete group', icon: <Icon.Trash />, danger: true, onClick: () => { setActionsOpen(null); removeGroup(); } },
+            ]}
+          />
+          <ActionsSheet
+            open={actionsOpen === 'trip'}
+            onClose={() => setActionsOpen(null)}
+            title={currentTrip ? `${currentTrip.emoji} ${currentTrip.name}` : 'Trip actions'}
+            actions={[
+              { label: 'Delete trip', icon: <Icon.Trash />, danger: true, onClick: () => { setActionsOpen(null); removeTrip(); } },
+            ]}
+          />
+          <UpiPaySheet
+            open={!!upiPay}
+            onClose={() => setUpiPay(null)}
+            transfer={upiPay?.transfer}
+            tripName={upiPay?.trip?.name}
+            knownVpa={upiPay ? upiMap[upiPay.transfer.to] : ''}
+            onSaveVpa={saveVpa}
+            toast={toast}
+          />
+          <SettingsSheet
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            mode={mode}
+            supaConfig={supaConfig}
+            onOpenSupabase={() => { setSettingsOpen(false); setSupabaseOpen(true); }}
+            onResetAll={resetAll}
+          />
+          <SupabaseSetupSheet
+            open={supabaseOpen}
+            onClose={() => setSupabaseOpen(false)}
+            onConnect={connectSupabase}
+            onDisconnect={disconnectSupabase}
+            config={supaConfig}
+            mode={mode}
+            toast={toast}
+          />
+          <ConfirmSheet open={!!confirm} onClose={() => setConfirm(null)} onConfirm={confirm?.onConfirm} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} />
+          <ToastStack toasts={toasts} />
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

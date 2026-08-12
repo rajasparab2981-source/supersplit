@@ -1,0 +1,29 @@
+# Netlify configuration for SplitPro
+# Drag the SplitPro folder into app.netlify.com/drop or run `netlify deploy --prod`.
+
+[build]
+  publish = "."
+
+# Don't cache HTML files — we want users to pick up updates immediately.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Cache JS / CSS / fonts hard. We don't fingerprint, so bust by bumping a query string
+# (e.g. <script src="db.js?v=2">) when shipping breaking changes.
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+# Make the canonical app the root URL.
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
