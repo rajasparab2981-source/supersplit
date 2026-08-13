@@ -210,7 +210,7 @@
       if (sdkLoadPromise) return sdkLoadPromise;
       sdkLoadPromise = new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.min.js';
+        s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
         s.onload = () => {
           if (window.supabase && window.supabase.createClient) resolve();
           else reject(new Error('Supabase SDK loaded but createClient missing'));

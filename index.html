@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <!-- maximum-scale removed: it blocked pinch-zoom (an accessibility failure) and
+       did NOT stop iOS focus-zoom anyway — that is handled by 16px inputs below. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#08080C" />
   <title>SplitPro — Split bills in ₹</title>
 
@@ -49,9 +51,21 @@
 
       --app-max: 480px;
       --header-h: 64px;
+
+      /* Safe-area shorthands — resolve to 0px on devices without notches. */
+      --sa-top:    env(safe-area-inset-top, 0px);
+      --sa-bottom: env(safe-area-inset-bottom, 0px);
+      --sa-left:   env(safe-area-inset-left, 0px);
+      --sa-right:  env(safe-area-inset-right, 0px);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html {
+      /* Stops mobile Safari from inflating text in landscape. */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
 
     html, body {
       margin: 0; padding: 0;
@@ -65,6 +79,20 @@
         radial-gradient(800px 500px at 90% 100%, rgba(110,91,255,.06), transparent 60%);
       background-attachment: fixed;
       min-height: 100vh;
+      min-height: 100dvh;          /* dvh excludes mobile browser chrome */
+      /* Nothing should ever scroll sideways on a phone. */
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    /* Body scroll lock while a bottom sheet is open. Applied by React via
+       document.body.classList — without this the page behind the sheet
+       scrolls under your finger on iOS and Android. */
+    body.sheet-open {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      width: 100%;
     }
 
     button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
@@ -77,10 +105,29 @@
       border-radius: var(--r-1);
       padding: 14px 16px;
       width: 100%;
+      max-width: 100%;
       outline: none;
       color: var(--text);
+      /* 16px minimum: below this, iOS Safari zooms the whole page on focus and
+         never zooms back out. This single rule is the main "app doesn't fit
+         on mobile" fix. */
+      font-size: 16px;
       transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
     }
+
+    /* Number inputs: kill the spinners (they steal width and are unusable on
+       touch) and stop the scroll wheel / trackpad from silently changing amounts. */
+    input[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none; margin: 0;
+    }
+
+    /* Date inputs collapse to a tiny intrinsic width on iOS unless forced. */
+    input[type="date"] { min-height: 52px; display: block; }
     input::placeholder, textarea::placeholder { color: var(--text-faint); }
     input:focus, select:focus, textarea:focus {
       border-color: var(--primary);
@@ -94,17 +141,27 @@
       max-width: var(--app-max);
       margin: 0 auto;
       min-height: 100vh;
+      min-height: 100dvh;
       position: relative;
-      padding-bottom: var(--s-6);
+      width: 100%;
+      /* Clear the FAB (60px) + the home-indicator strip. */
+      padding-bottom: calc(var(--s-6) + 56px + var(--sa-bottom));
+      /* Landscape notch padding. */
+      padding-left: var(--sa-left);
+      padding-right: var(--sa-right);
     }
 
     .app-header {
       position: sticky; top: 0; z-index: 20;
-      height: var(--header-h);
+      /* Header grows to sit below the notch instead of under it. */
+      height: calc(var(--header-h) + var(--sa-top));
+      padding-top: var(--sa-top);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 var(--s-2);
+      padding-left: var(--s-2);
+      padding-right: var(--s-2);
       background: rgba(8,8,12,.85);
       backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
       border-bottom: 1px solid transparent;
       transition: border-color .2s ease;
     }
@@ -124,9 +181,13 @@
     }
     .app-header .crumb {
       font-family: 'Inter'; font-weight: 500; font-size: 11px;
-      color: var(--text-mute); margin: 0; line-height: 1;
+      color: var(--text-mute); margin: 2px 0 0; line-height: 1.2;
       text-transform: uppercase; letter-spacing: .08em;
+      /* Long group names wrapped onto a second line and overflowed the
+         fixed-height header. */
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
+    .app-header h1 { line-height: 1.2; }
 
     .icon-btn {
       width: 44px; height: 44px;
@@ -159,7 +220,11 @@
     .section-row .section-title { margin: 0; padding: 0; }
     .section-row .add-btn {
       font-family: 'Inter'; font-weight: 700; font-size: 12px;
-      color: var(--primary); padding: 6px 12px; border-radius: 999px;
+      color: var(--primary); border-radius: 999px;
+      /* Was 29px tall. */
+      min-height: 40px; padding: 0 16px;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
       background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.25);
       transition: background .15s ease;
     }
@@ -186,9 +251,13 @@
     }
     .summary .net {
       font-family: 'Manrope'; font-weight: 800;
-      font-size: 42px; letter-spacing: -.04em; line-height: 1;
+      /* Fluid: large balances like ₹1,24,500 no longer overflow the card on
+         a 320px screen, and it still reads big on a 480px one. */
+      font-size: clamp(30px, 9.5vw, 42px);
+      letter-spacing: -.04em; line-height: 1.05;
       margin: 6px 0 4px;
       position: relative;
+      overflow-wrap: anywhere;
     }
     .summary .net.pos { color: var(--primary); text-shadow: 0 0 24px rgba(0,229,160,.25); }
     .summary .net.neg { color: var(--negative); }
@@ -206,12 +275,12 @@
       position: relative;
     }
     .summary-split {
-      display: flex; gap: 12px; margin-top: 18px;
+      display: flex; gap: 10px; margin-top: 18px;
       padding-top: 18px;
       border-top: 1px solid var(--border-2);
       position: relative;
     }
-    .summary-split > div { flex: 1; min-width: 0; }
+    .summary-split > div { flex: 1 1 0; min-width: 0; }
     .summary-split .col-label {
       font-family: 'Inter'; font-weight: 600; font-size: 10px;
       color: var(--text-mute); text-transform: uppercase; letter-spacing: .08em;
@@ -249,7 +318,10 @@
     .self-bar button {
       font-family: 'Inter'; font-weight: 600; font-size: 12px;
       color: var(--primary);
-      padding: 6px 12px; border-radius: 999px;
+      /* Was 29px tall — too small to hit reliably with a thumb. */
+      min-height: 40px; padding: 0 16px; border-radius: 999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
       background: rgba(0,229,160,.1);
       border: 1px solid rgba(0,229,160,.2);
     }
@@ -378,7 +450,7 @@
     .btn-full { width: 100%; }
 
     .fab {
-      position: fixed; bottom: calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+      position: fixed; bottom: calc(var(--s-3) + var(--sa-bottom));
       right: 50%;
       transform: translateX(calc(var(--app-max) / 2 - 76px));
       width: 60px; height: 60px;
@@ -392,7 +464,8 @@
     .fab:hover { background: var(--primary-2); }
     .fab:active { transform: translateX(calc(var(--app-max) / 2 - 76px)) scale(.94); }
     @media (max-width: 520px) {
-      .fab { right: var(--s-3); transform: none; }
+      /* Respect the landscape notch as well as the side gutter. */
+      .fab { right: calc(var(--s-3) + var(--sa-right)); transform: none; }
       .fab:active { transform: scale(.94); }
     }
 
@@ -415,14 +488,18 @@
 
     .chip {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px;
+      padding: 10px 14px;
       border-radius: 999px;
       background: var(--surface);
       border: 1px solid var(--border);
       font-family: 'Manrope'; font-weight: 600; font-size: 13px;
       color: var(--text-soft);
       transition: all .15s ease;
-      min-height: 38px;
+      /* 44px = Apple/Material minimum tap target (was 38px). */
+      min-height: 44px;
+      /* Long member names must not blow out the row width. */
+      max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .chip.selectable { cursor: pointer; }
     .chip.selectable:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
@@ -435,15 +512,17 @@
 
     .chip-member {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 4px 14px 4px 4px;
+      padding: 6px 14px 6px 6px;
       border-radius: 999px;
       background: var(--surface);
       border: 1.5px solid var(--border);
       font-family: 'Manrope'; font-weight: 600; font-size: 13px;
       color: var(--text);
       transition: all .15s ease;
-      min-height: 40px;
+      min-height: 44px;
       cursor: pointer;
+      max-width: 100%;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .chip-member:hover { border-color: var(--border-2); background: var(--surface-2); }
     .chip-member.active {
@@ -462,19 +541,24 @@
 
     .member-pill {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 4px 12px 4px 4px;
+      padding: 6px 6px 6px 6px;
       border-radius: 999px;
       background: var(--surface);
       border: 1px solid var(--border);
       font-family: 'Manrope'; font-weight: 600; font-size: 13px;
       color: var(--text);
-      min-height: 40px;
+      min-height: 44px;
+      max-width: 100%;
     }
     .member-pill .x {
-      font-family: 'Inter'; font-weight: 500; font-size: 13px;
-      color: var(--text-mute); padding: 0 4px;
+      font-family: 'Inter'; font-weight: 500; font-size: 15px;
+      color: var(--text-mute);
+      /* Was a 13px glyph with 4px padding — near-impossible to hit with a thumb. */
+      width: 32px; height: 32px; border-radius: 999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
-    .member-pill .x:hover { color: var(--negative); }
+    .member-pill .x:hover { color: var(--negative); background: var(--negative-soft); }
 
     /* ---------- Tabs (segmented) ---------- */
     .tabs {
@@ -486,11 +570,13 @@
       margin: var(--s-2) 0;
     }
     .tab {
-      flex: 1; height: 40px;
+      flex: 1; min-width: 0; height: 44px;
       border-radius: 999px;
       font-family: 'Manrope'; font-weight: 600; font-size: 13px;
       color: var(--text-mute);
       transition: background .15s ease, color .15s ease;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      padding: 0 4px;
     }
     .tab.active {
       background: linear-gradient(180deg, var(--surface-3) 0%, var(--surface-2) 100%);
@@ -562,8 +648,12 @@
       position: fixed; inset: 0;
       background: rgba(0,0,0,.7);
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 50;
       animation: fade-in .2s ease;
+      /* Absorb touch-scroll on the backdrop rather than passing it to the page. */
+      overscroll-behavior: contain;
+      touch-action: none;
     }
     .sheet {
       position: fixed; left: 50%; bottom: 0;
@@ -575,10 +665,12 @@
       border-radius: 24px 24px 0 0;
       box-shadow: 0 -20px 60px rgba(0,0,0,.6);
       z-index: 60;
+      /* dvh tracks the on-screen keyboard and browser chrome; the vh line is
+         a fallback for older browsers. Capping at 92% leaves the scrim tappable. */
       max-height: 92vh;
+      max-height: 92dvh;
       display: flex; flex-direction: column;
       animation: slide-up .25s cubic-bezier(.2,.8,.25,1);
-      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .sheet-handle {
       width: 44px; height: 4px;
@@ -589,7 +681,8 @@
     }
     .sheet-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: var(--s-1) var(--s-2);
+      gap: 8px;
+      padding: 4px var(--s-1);
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
     }
@@ -597,10 +690,17 @@
       font-family: 'Manrope'; font-weight: 700;
       font-size: 17px; letter-spacing: -.01em;
       margin: 0;
+      /* Long trip/group names used to push Cancel and Save off the edges. */
+      flex: 1; min-width: 0; text-align: center;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .sheet-cancel, .sheet-save {
       font-family: 'Manrope'; font-weight: 600; font-size: 14px;
-      padding: 8px 10px; border-radius: 8px;
+      /* 44px minimum tap target (was ~34px). */
+      min-height: 44px; min-width: 60px;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 8px 12px; border-radius: 10px;
+      flex-shrink: 0;
     }
     .sheet-cancel { color: var(--text-mute); }
     .sheet-cancel:hover { background: var(--surface); color: var(--text); }
@@ -608,7 +708,17 @@
     .sheet-save:hover { background: rgba(0,229,160,.1); }
     .sheet-save:disabled { color: var(--text-faint); background: transparent; cursor: not-allowed; }
 
-    .sheet-body { padding: var(--s-2); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .sheet-body {
+      padding: var(--s-2);
+      /* Bottom padding keeps the last field above the home indicator and gives
+         room to scroll clear of the keyboard. */
+      padding-bottom: calc(var(--s-3) + var(--sa-bottom));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      /* Stops the page behind from scrolling once the sheet hits its end. */
+      overscroll-behavior: contain;
+      flex: 1; min-height: 0;
+    }
 
     @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slide-up { from { transform: translate(-50%, 100%); } to { transform: translate(-50%, 0); } }
@@ -764,6 +874,24 @@
     .badge-ok    { color: var(--primary); background: var(--primary-soft); border: 1px solid rgba(0,229,160,.3); }
     .badge-warn  { color: var(--gold); background: rgba(255,200,87,.1); border: 1px solid rgba(255,200,87,.25); }
 
+    /* ---------- Trip recap stat grid ---------- */
+    /* Grid items default to min-width:auto, so a long expense name refused to
+       shrink and pushed the whole card off the right edge on phones. */
+    .recap-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .recap-cell {
+      min-width: 0;
+      overflow: hidden;
+      background: rgba(255,255,255,.04);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .recap-cell > * { min-width: 0; max-width: 100%; }
+
     /* ---------- Helpers ---------- */
     .spacer-1 { height: var(--s-1); }
     .spacer-2 { height: var(--s-2); }
@@ -783,8 +911,52 @@
       white-space: pre;
     }
 
-    @media (max-width: 360px) {
-      .summary .net { font-size: 34px; }
+    /* ---------- Narrow phones (iPhone SE, small Androids) ---------- */
+    @media (max-width: 380px) {
+      .app-content { padding-left: 12px; padding-right: 12px; }
+      .summary { padding: var(--s-2) 18px; border-radius: var(--r-3); }
+      .summary-split { gap: 8px; }
+      .summary-split .col-amt { font-size: 15px; }
+      .summary-split .col-label { font-size: 9px; letter-spacing: .04em; }
+
+      /* Reclaim horizontal space in list rows. */
+      .row { gap: 10px; padding: 12px 13px; }
+      .row-emoji { width: 42px; height: 42px; font-size: 21px; border-radius: 12px; }
+      .row-title { font-size: 15px; }
+      .row-balance .b-amt { font-size: 15px; }
+
+      .exp-row { gap: 10px; padding: 12px 13px; }
+      .exp-cat { width: 40px; height: 40px; font-size: 20px; }
+      .exp-side { min-width: 76px; }
+
+      .tab { font-size: 12px; }
+      .chip { padding: 10px 12px; font-size: 12px; }
+      .chip-member { font-size: 12px; }
+
+      /* 8 columns of emoji at 320px gave ~33px cells; 7 is comfortably tappable. */
+      .emoji-picker { grid-template-columns: repeat(7, 1fr); }
+      .emoji-cell { height: 44px; }
+
+      .settle-row { gap: 8px; padding: 12px 13px; }
+      .settle-row .who { font-size: 13px; }
+      .settings-item { padding: 14px 14px; }
+    }
+
+    /* Landscape phones: the sheet would otherwise fill the screen with no
+       visible scrim, making it feel like a broken full-page takeover. */
+    @media (max-height: 480px) and (orientation: landscape) {
+      .sheet { max-height: 96dvh; border-radius: 16px 16px 0 0; }
+      .summary { padding: var(--s-2); }
+      .summary .net { font-size: 28px; }
+    }
+
+    /* Respect reduced-motion preferences. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
     }
 
     /* ---------- Confetti celebration ---------- */
@@ -844,9 +1016,12 @@
 <body>
   <div id="root"></div>
 
-  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Pinned: 7.24.x defaults to the classic JSX runtime (React.createElement).
+       Later Babel builds default to "automatic" which emits `import` statements
+       that don't work in a non-module browser script. -->
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
 
   <!-- Supabase JS is lazy-loaded by db.js only when the user connects.
        Keeping it out of the critical path means a broken/slow CDN response
@@ -864,6 +1039,11 @@
 
     const SELF_KEY = 'splitpro_self_v1';
     const UPI_KEY  = 'splitpro_upi_v1';   // { memberName: upiId }
+
+    // Coarse pointer = finger. Used to suppress desktop-only affordances
+    // (autofocus, hover-dependent behaviour) that hurt on touch.
+    const IS_TOUCH = typeof window !== 'undefined' &&
+      window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
     // ---------- UPI helpers ----------
     function loadUpiMap() {
@@ -1158,7 +1338,42 @@
       );
     }
 
+    // Locks background scrolling while any sheet is open, and restores the exact
+    // scroll offset on close. Reference-counted because sheets can stack
+    // (e.g. Settings → Supabase setup).
+    let __scrollLockCount = 0;
+    let __scrollLockY = 0;
+    function useBodyScrollLock(active) {
+      useEffect(() => {
+        if (!active) return;
+        if (__scrollLockCount === 0) {
+          __scrollLockY = window.scrollY || window.pageYOffset || 0;
+          document.body.style.top = `-${__scrollLockY}px`;
+          document.body.classList.add('sheet-open');
+        }
+        __scrollLockCount += 1;
+        return () => {
+          __scrollLockCount -= 1;
+          if (__scrollLockCount === 0) {
+            document.body.classList.remove('sheet-open');
+            document.body.style.top = '';
+            window.scrollTo(0, __scrollLockY);
+          }
+        };
+      }, [active]);
+    }
+
     function Sheet({ open, onClose, title, onSave, saveLabel = 'Save', canSave = true, children }) {
+      useBodyScrollLock(open);
+
+      // Escape closes the sheet (desktop + hardware keyboards).
+      useEffect(() => {
+        if (!open) return;
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+      }, [open, onClose]);
+
       if (!open) return null;
       return (
         <React.Fragment>
@@ -1170,7 +1385,7 @@
               <h3 className="sheet-title">{title}</h3>
               {onSave ? (
                 <button className="sheet-save" onClick={onSave} disabled={!canSave}>{saveLabel}</button>
-              ) : <span style={{ width: 56 }} />}
+              ) : <span style={{ width: 60, flexShrink: 0 }} />}
             </div>
             <div className="sheet-body">{children}</div>
           </div>
@@ -1339,8 +1554,10 @@
               onClick={onOpenActions}
               aria-label="Group actions"
               style={{
-                position: 'absolute', top: 12, right: 12,
-                width: 36, height: 36, borderRadius: 999,
+                position: 'absolute', top: 8, right: 8,
+                // 36px → 44px: this kebab sits in a corner where mis-taps are
+                // most likely, and it was the smallest control on the screen.
+                width: 44, height: 44, borderRadius: 999,
                 background: 'rgba(0,0,0,.25)',
                 color: 'rgba(255,255,255,.8)',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -1494,8 +1711,10 @@
               onClick={onOpenActions}
               aria-label="Trip actions"
               style={{
-                position: 'absolute', top: 12, right: 12,
-                width: 36, height: 36, borderRadius: 999,
+                position: 'absolute', top: 8, right: 8,
+                // 36px → 44px: this kebab sits in a corner where mis-taps are
+                // most likely, and it was the smallest control on the screen.
+                width: 44, height: 44, borderRadius: 999,
                 background: 'rgba(0,0,0,.25)',
                 color: 'rgba(255,255,255,.8)',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -1547,9 +1766,11 @@
           {tab === 'balances' && <BalancesTab balances={balances} self={self} expenses={expenses} />}
           {tab === 'settle'   && <SettleTab settlements={settlements} balances={balances} self={self} onPay={(s) => onPay(s, trip)} />}
 
-          <div className="spacer-fab" />
-
           {expenses.length >= 2 && <TripRecap trip={trip} group={group} expenses={expenses} balances={balances} />}
+
+          {/* Spacer must come AFTER the recap card, otherwise the FAB floats on
+              top of it and hides the last rows. */}
+          <div className="spacer-fab" />
 
           {tab === 'expenses' && members.length > 0 && (
             <button className="fab" onClick={onAddExpense} aria-label="Add expense"><Icon.Plus /></button>
@@ -1635,41 +1856,41 @@
               <p className="net" style={{ color: 'var(--text)' }}>{fmtINR(stats.total)}</p>
               <p className="sub">across {expenses.length} expense{expenses.length === 1 ? '' : 's'} · avg {fmtINR(stats.avgPerPerson)}/person</p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 18 }}>
+              <div className="recap-grid">
                 {stats.topSpender && (
-                  <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                  <div className="recap-cell">
                     <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Top spender</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, minWidth: 0 }}>
                       <Avatar name={stats.topSpender} size="sm" />
-                      <div style={{ minWidth: 0 }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topSpender}</div>
-                        <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>{fmtINR(stats.topSpenderAmt)}</div>
+                        <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.topSpenderAmt)}</div>
                       </div>
                     </div>
                   </div>
                 )}
-                <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                <div className="recap-cell">
                   <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Top category</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                    <span style={{ fontSize: 24 }}>{stats.topCat.emoji}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{stats.topCat.label}</div>
-                      <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: 'var(--text-soft)' }}>{stats.topCatPct}% of spend</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, minWidth: 0 }}>
+                    <span style={{ fontSize: 24, flexShrink: 0 }}>{stats.topCat.emoji}</span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topCat.label}</div>
+                      <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: 'var(--text-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topCatPct}% of spend</div>
                     </div>
                   </div>
                 </div>
                 {stats.busiestDay && (
-                  <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                  <div className="recap-cell">
                     <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Biggest day</div>
-                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8 }}>{fmtDate(stats.busiestDay)}</div>
-                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>{fmtINR(stats.busiestDayAmt)}</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtDate(stats.busiestDay)}</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.busiestDayAmt)}</div>
                   </div>
                 )}
                 {stats.biggest && (
-                  <div style={{ background: 'rgba(255,255,255,.04)', borderRadius: 12, padding: 12 }}>
+                  <div className="recap-cell">
                     <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Biggest expense</div>
                     <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.biggest.description}</div>
-                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)' }}>{fmtINR(stats.biggest.amount)}</div>
+                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.biggest.amount)}</div>
                   </div>
                 )}
               </div>
@@ -1731,7 +1952,7 @@
                 title={names.join(', ')}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
-                  padding: '3px 8px', borderRadius: 999,
+                  padding: '6px 10px', minHeight: 32, borderRadius: 999,
                   background: youReacted ? 'rgba(0,229,160,.15)' : 'var(--surface-2)',
                   border: '1px solid ' + (youReacted ? 'rgba(0,229,160,.4)' : 'var(--border)'),
                   fontFamily: 'Inter', fontWeight: 600, fontSize: 12,
@@ -1750,13 +1971,14 @@
                 onClick={(e) => { e.stopPropagation(); setPicking((v) => !v); }}
                 aria-label="React"
                 style={{
-                  width: 26, height: 26, borderRadius: 999,
+                  // 26px → 32px, with the surrounding row giving extra slop.
+                  width: 32, height: 32, borderRadius: 999,
                   background: 'var(--surface-2)',
                   border: '1px solid var(--border)',
                   color: 'var(--text-mute)',
-                  fontFamily: 'Inter', fontWeight: 700, fontSize: 13,
+                  fontFamily: 'Inter', fontWeight: 700, fontSize: 15,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer',
+                  cursor: 'pointer', flexShrink: 0,
                 }}
               >{picking ? '×' : '+'}</button>
               {picking && (
@@ -1769,6 +1991,10 @@
                   borderRadius: 999,
                   boxShadow: '0 12px 32px rgba(0,0,0,.5)',
                   zIndex: 5,
+                  // The popover is ~230px wide and anchored to a button near the
+                  // right edge; without this it ran off-screen on narrow phones.
+                  maxWidth: 'calc(100vw - 40px)',
+                  flexWrap: 'wrap', justifyContent: 'flex-end',
                 }}>
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
@@ -2390,13 +2616,19 @@
           </div>
           <div className="field">
             <label className="field-label">Description</label>
-            <input autoFocus placeholder="Dinner at Britto's" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={60} />
+            {/* autoFocus only on pointer devices. On a phone it yanked the
+                keyboard up before the sheet finished animating, scrolling the
+                form to a random position. */}
+            <input autoFocus={!IS_TOUCH} placeholder="Dinner at Britto's" value={description}
+              onChange={(e) => setDescription(e.target.value)} maxLength={60}
+              enterKeyHint="next" autoComplete="off" />
           </div>
           <div className="field">
             <label className="field-label">Amount</label>
             <div className="amount-input-wrap">
               <input type="number" inputMode="decimal" min="0" step="0.01" placeholder="0" className="amount-input"
-                value={amount} onChange={(e) => setAmount(e.target.value)} />
+                value={amount} onChange={(e) => setAmount(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()} enterKeyHint="done" />
             </div>
             {amt > 0 && splitAmong.length > 0 && (
               <p className="split-hint">{fmtINR(perPerson, true)} per person × {splitAmong.length}</p>
@@ -2479,11 +2711,13 @@
                         type="button"
                         onClick={() => toggleShareMember(m.name)}
                         style={{
-                          width: 22, height: 22, borderRadius: 6,
+                          // Bumped 22px → 28px; still small, but paired with the
+                          // taller 44px row it is now a reliable thumb target.
+                          width: 28, height: 28, borderRadius: 8,
                           border: '2px solid ' + (included ? 'var(--primary)' : 'var(--border-2)'),
                           background: included ? 'var(--primary)' : 'transparent',
                           color: '#0A1A14',
-                          fontFamily: 'Manrope', fontWeight: 800, fontSize: 14,
+                          fontFamily: 'Manrope', fontWeight: 800, fontSize: 15,
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0,
                         }}
@@ -2493,7 +2727,9 @@
                       <span style={{ fontFamily: 'Manrope', fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {m.name === self ? `${m.name} (you)` : m.name}
                       </span>
-                      <div style={{ position: 'relative', width: 100, flexShrink: 0 }}>
+                      {/* Shrinkable but never below 84px, so long names and the
+                          input can coexist on a 320px screen. */}
+                      <div style={{ position: 'relative', width: 100, minWidth: 84, flexShrink: 0 }}>
                         <input
                           type="number"
                           inputMode="decimal"
@@ -2506,11 +2742,15 @@
                             // auto-include if user types
                             if (!(m.name in shareInputs) && e.target.value) toggleShareMember(m.name);
                           }}
+                          onWheel={(e) => e.currentTarget.blur()}
                           disabled={!included}
                           style={{
-                            padding: '8px 28px 8px 10px',
-                            fontFamily: 'Manrope', fontWeight: 700, fontSize: 14,
+                            padding: '10px 26px 10px 10px',
+                            fontFamily: 'Manrope', fontWeight: 700,
+                            // Must stay >=16px or iOS zooms the sheet on every tap.
+                            fontSize: 16,
                             textAlign: 'right',
+                            minHeight: 44,
                           }}
                         />
                         <span style={{
@@ -2671,7 +2911,8 @@
             </div>
             <div style={{
               fontFamily: 'Manrope', fontWeight: 800,
-              fontSize: 42, letterSpacing: '-.03em',
+              // Fluid so long results shrink instead of wrapping mid-number.
+              fontSize: 'clamp(30px, 9vw, 42px)', letterSpacing: '-.03em',
               color: display === 'Error' ? 'var(--negative)' : 'var(--text)',
               wordBreak: 'break-all',
               lineHeight: 1.1,
