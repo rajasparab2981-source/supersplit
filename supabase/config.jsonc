@@ -288,13 +288,18 @@
       //   "sender_name": "Admin"
       // },
 
-      // Uncomment to customize email template
-      // "template": {
-      //   "invite": {
-      //     "subject": "You have been invited",
-      //     "content_path": "./supabase/templates/invite.html"
-      //   }
-      // },
+      // SplitPro: sign-in emails carry both a link and the code, because the
+      // app lets people type the code (handy when the link opens another browser).
+      "template": {
+        "confirmation": {
+          "subject": "Your SplitPro sign-in code: {{ .Token }}",
+          "content_path": "./supabase/templates/signin.html"
+        },
+        "magic_link": {
+          "subject": "Your SplitPro sign-in code: {{ .Token }}",
+          "content_path": "./supabase/templates/signin.html"
+        }
+      },
 
       // Uncomment to customize notification email template
       // "notification": {
