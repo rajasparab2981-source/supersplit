@@ -10,7 +10,7 @@ const pillStyle = (primary) => ({
   background: primary ? 'var(--primary)' : 'var(--surface-3)',
   padding: '8px 12px', borderRadius: 999, minHeight: 36,
   boxShadow: primary ? '0 0 0 1px rgba(0,229,160,.4), 0 4px 12px rgba(0,229,160,.3)' : 'none',
-  marginLeft: 6, whiteSpace: 'nowrap',
+  whiteSpace: 'nowrap',
 });
 
 export function SettleRow({ s, self, onPay, onMarkPaid }) {
@@ -24,12 +24,16 @@ export function SettleRow({ s, self, onPay, onMarkPaid }) {
       <Avatar name={s.to} size="sm" />
       <span className="who">{s.to === self ? 'you' : s.to}</span>
       <span className="pay-amt">{fmtINR(s.amount)}</span>
-      {youArePayer && <button onClick={() => onPay(s)} style={pillStyle(true)}>Pay</button>}
-      {/* Anyone involved can record that the money changed hands (cash, UPI, bank). */}
-      {involvesYou && onMarkPaid && (
-        <button onClick={() => onMarkPaid(s)} style={pillStyle(false)} aria-label={`Mark ${fmtINR(s.amount)} from ${s.from} to ${s.to} as paid`}>
-          Mark paid
-        </button>
+      {(youArePayer || (involvesYou && onMarkPaid)) && (
+        <div className="settle-actions">
+          {youArePayer && <button onClick={() => onPay(s)} style={pillStyle(true)}>Pay via UPI</button>}
+          {/* Anyone involved can record that the money changed hands (cash, UPI, bank). */}
+          {involvesYou && onMarkPaid && (
+            <button onClick={() => onMarkPaid(s)} style={pillStyle(false)} aria-label={`Mark ${fmtINR(s.amount)} from ${s.from} to ${s.to} as paid`}>
+              Mark as paid
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
@@ -56,7 +60,9 @@ function PaymentsList({ payments, self, onUndoPayment }) {
               </span>
             </span>
             {onUndoPayment && (
-              <button onClick={() => onUndoPayment(p)} style={pillStyle(false)} aria-label="Undo this payment">Undo</button>
+              <div className="settle-actions">
+                <button onClick={() => onUndoPayment(p)} style={pillStyle(false)} aria-label="Undo this payment">Undo</button>
+              </div>
             )}
           </div>
         ))}
