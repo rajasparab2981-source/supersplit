@@ -1,0 +1,14 @@
+# Local data exports contain friends' personal data — never commit
+backups/
+
+# Old manual backup (superseded by git history)
+index.html.backup
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/
