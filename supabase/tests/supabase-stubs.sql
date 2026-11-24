@@ -16,10 +16,10 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
 end $$;
 
--- Supabase grants table/function access broadly and relies on RLS.
+-- Like current Supabase projects: NO automatic table/sequence grants to anon or
+-- authenticated, so migrations must grant exactly what they need. (Staging
+-- caught this on 2026-11-24 when the older, permissive default hid it.)
 grant usage on schema public to anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
 
 -- auth

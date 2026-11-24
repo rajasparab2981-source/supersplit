@@ -74,6 +74,21 @@ are rewritten for the new data model in Phase 2–4.
 the access rules, money rules, invites and import, including your real backup
 when `backups/` is present locally.
 
+### Staging project
+
+`splitpro-staging` (Mumbai) is a separate free Supabase project for trying
+migrations before production. The CLI is linked to it (`supabase/.temp`, not
+committed).
+
+```bash
+npx supabase db push --remote --dry-run          # what would change
+npx supabase db push --remote                    # apply new migrations to staging
+npx supabase db advisors --remote                # Supabase security/performance checks
+npx supabase db query --remote -f supabase/tests/staging-smoke.sql   # live checks, rolled back
+```
+
+Always check the `Target:` line says **splitpro-staging** before confirming.
+
 ## Security: group passcode (Phase 0 lockdown)
 
 The shared database is protected by Row Level Security plus a **group passcode**.
