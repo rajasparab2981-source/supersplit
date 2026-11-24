@@ -211,6 +211,8 @@
     // Allow/disallow new user signups to your project. Existing users can still sign in.
     "enable_signup": true,
     // Allow/disallow anonymous sign-ins to your project.
+    // STAGING ONLY (throwaway test users). Must be false for production:
+    // never `config push` this file to the live project without setting this to false.
     "enable_anonymous_sign_ins": true,
     // Allow/disallow testing manual linking of accounts
     "enable_manual_linking": false,

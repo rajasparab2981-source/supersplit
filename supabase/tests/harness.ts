@@ -20,17 +20,30 @@ export interface TestDb {
   admin<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>;
 }
 
-export async function createTestDb(): Promise<TestDb> {
-  const pg = await PGlite.create({ extensions: { pgcrypto } });
-  await pg.exec(readFileSync(join(ROOT, 'tests', 'supabase-stubs.sql'), 'utf8'));
+/** Apply every v2 migration in filename order (like `supabase db push`). */
+export async function applyMigrations(pg: PGlite): Promise<string[]> {
   const dir = join(ROOT, 'migrations');
-  for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
+  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  for (const file of files) {
     try {
       await pg.exec(readFileSync(join(dir, file), 'utf8'));
     } catch (e) {
       throw new Error(`Migration ${file} failed: ${(e as Error).message}`);
     }
   }
+  return files;
+}
+
+/**
+ * Fresh in-memory database with the Supabase stand-ins.
+ * `setup` runs before the migrations (e.g. to recreate the live v1 state);
+ * pass `migrate: false` to apply them yourself.
+ */
+export async function createTestDb(opts: { setup?: (pg: PGlite) => Promise<void>; migrate?: boolean } = {}): Promise<TestDb> {
+  const pg = await PGlite.create({ extensions: { pgcrypto } });
+  await pg.exec(readFileSync(join(ROOT, 'tests', 'supabase-stubs.sql'), 'utf8'));
+  if (opts.setup) await opts.setup(pg);
+  if (opts.migrate !== false) await applyMigrations(pg);
 
   // Each call runs in its own transaction so deferred checks fire at the end,
   // exactly like one PostgREST request.
