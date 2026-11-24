@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DB } from '../db/db';
+import { clearRedirectError, peekRedirectError } from '../lib/authRedirect';
 import { IS_TOUCH } from '../lib/env';
 
 /**
@@ -17,7 +18,8 @@ export function SignInScreen({ joining }) {
   const [sentTo, setSentTo] = useState(null);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(peekRedirectError);
+  useEffect(() => { clearRedirectError(); }, []);
   const [testName, setTestName] = useState('Test user');
 
   const run = async (fn) => {
@@ -32,6 +34,7 @@ export function SignInScreen({ joining }) {
         <div className="emoji-bubble">₹</div>
         <h3>{joining ? 'Sign in to join the group' : 'Welcome to SplitPro'}</h3>
         <p>Split trips and shared bills with friends. Your groups sync across all your devices.</p>
+        {error && <p role="alert" style={{ color: 'var(--negative)', background: 'rgba(255,77,109,.08)', border: '1px solid rgba(255,77,109,.3)', borderRadius: 12, padding: '10px 12px', textAlign: 'left', fontSize: 14 }}>{error}</p>}
 
         <button type="button" className="btn btn-full" disabled={busy}
           onClick={() => run(() => DB.signInWithGoogle())}
@@ -86,7 +89,6 @@ export function SignInScreen({ joining }) {
           </form>
         )}
 
-        {error && <p className="split-hint" role="alert" style={{ color: 'var(--negative)', textAlign: 'left' }}>{error}</p>}
 
         {DB.isStaging() && (
           <div style={{ marginTop: 28, textAlign: 'left', borderTop: '1px dashed var(--border-2)', paddingTop: 12 }}>
