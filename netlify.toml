@@ -20,6 +20,11 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
 # Vite fingerprints everything in /assets (file names change with content),
 # so these can be cached forever.
 [[headers]]
