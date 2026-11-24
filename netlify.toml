@@ -50,11 +50,15 @@
 
 # ------------------------------------------------------------
 # Which Supabase project each build talks to (public values only).
-# Deploy previews and branch builds use STAGING.
-# SWITCHOVER: when v2 goes live, point production at the production
-# project's URL + publishable key (see supabase/SWITCHOVER.md).
-# Until then production also uses staging, so an accidental merge
-# shows an empty staging app instead of touching live v1 data.
+#
+# Decision (2026-11-24): the Mumbai project (ajcepfpmasykfrdfhtzq, created
+# as "splitpro-staging") becomes PRODUCTION at go-live; the Tokyo v1 project
+# is kept as the rollback, then paused. See supabase/SWITCHOVER.md.
+#
+# Until a new staging project exists, previews and branch builds also use
+# the Mumbai project. After go-live that is real data: try previews by
+# reading, not by adding test expenses. When the new staging project is
+# created, point the two preview contexts at it.
 # ------------------------------------------------------------
 [context.deploy-preview.environment]
   VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
@@ -66,7 +70,8 @@
   VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
   VITE_APP_ENV = "staging"
 
+# Production build: no staging labels or test sign-in.
 [context.production.environment]
   VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
   VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
-  VITE_APP_ENV = "staging"
+  VITE_APP_ENV = "production"
