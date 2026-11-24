@@ -6,7 +6,7 @@
      - Supabase: REST + Realtime + 5 s polling fallback
 
    Behaviour is unchanged from the Phase 0 version, including the group
-   passcode lockdown (header `x-splitpro-key`, see supabase/phase0-lockdown.sql).
+   passcode lockdown (header `x-splitpro-key`, see supabase/legacy/phase0-lockdown.sql).
    Phase 2 replaces this with a proper schema, auth and per-group sync.
    ============================================================ */
 

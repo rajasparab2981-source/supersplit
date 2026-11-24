@@ -39,7 +39,7 @@ alter table expenses add column if not exists shares jsonb;
 alter table expenses add column if not exists reactions jsonb;
 alter table expenses add column if not exists image_url text;
 
--- IMPORTANT: now protect the data. Run supabase/phase0-lockdown.sql
+-- IMPORTANT: now protect the data. Run supabase/legacy/phase0-lockdown.sql
 -- from the SplitPro repository (sets a group passcode and turns on
 -- Row Level Security). Without it, anyone with your URL can read and
 -- delete everything.`;
