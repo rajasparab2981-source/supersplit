@@ -1,70 +1,33 @@
-# Deploy SplitPro to Netlify
+# Deploying SplitPro
 
-> **Security:** the database is locked with a group passcode. See "Security" in README.md and
-> `supabase/phase0-lockdown.sql`. Always deploy app changes **before** running new lockdown SQL.
-> Bump the `?v=` on the `<script>` tags in `index.html` whenever `db.js` or `config.js` changes.
+The Netlify site **supersplit** is linked to GitHub
+(`rajasparab2981-source/supersplit`). There is nothing to upload by hand:
 
-## Before deploy — bake in your Supabase credentials (recommended)
+| You do | Netlify does |
+|---|---|
+| Push to a branch and open a pull request | Builds a **Deploy Preview** with its own URL, posted on the PR |
+| Merge the pull request into `main` | Builds and publishes to https://supersplit.netlify.app |
 
-So your friends don't have to paste anything to join. Open `config.js` and fill in the two values:
+Every build runs `npm ci && npm test && npm run build` (see `netlify.toml`).
+If a test fails, the deploy fails and the live site stays as it was.
 
-```js
-window.SplitProConfig = {
-  supabaseUrl: 'https://xxxxxxx.supabase.co',  // your Project URL
-  supabaseKey: 'eyJhbGci...',                  // your anon public key
-};
-```
+> Dragging files onto Netlify does **not** update this site. Its deploys come
+> only from GitHub.
 
-Save the file. When deployed, anyone opening the URL gets auto-connected to your Supabase project on first paint — no gear icon, no setup sheet, no copy-paste.
+## Rolling back
 
-> **Note:** With Supabase's "RLS disabled / trusted friend group" model (the one from the original handoff doc), the anon key is intentionally public. Anyone with the URL of your deployed site can read/write the database — same as if you'd shared the key with them manually. Only share the deploy URL with people you'd trust with the data itself.
+Netlify → supersplit → **Deploys** → pick an earlier published deploy →
+**Publish deploy**. That's instant. Then fix forward on a branch.
 
-If `config.js` is empty (default), the app falls back to local-storage mode, and the gear icon's Supabase sync sheet is still available for per-device setup.
+## Database changes
 
----
+Run SQL in Supabase → SQL Editor. Order matters: **deploy app changes first**,
+then run SQL that depends on them (the app is written to keep working until
+the SQL runs). Never commit a real passcode or any secret key; only the
+public anon key belongs in `src/config.ts`.
 
-Two paths. Pick whichever you prefer.
+## Custom domain (later)
 
-## Option A — Drag and drop (no account setup required initially)
-
-1. Open <https://app.netlify.com/drop> in your browser.
-2. Drag the entire `SplitPro` folder onto the drop zone.
-3. Netlify gives you a URL like `https://random-name-123.netlify.app/`.
-4. Click **Site settings → Change site name** to rename it (e.g. `splitpro-mustafa`).
-
-You're live. Share `https://splitpro-mustafa.netlify.app/` with your group.
-
-## Option B — Netlify CLI (recommended for re-deploys)
-
-One-time setup:
-
-```bash
-npm install -g netlify-cli
-netlify login          # opens browser, sign in / sign up
-```
-
-From the SplitPro folder:
-
-```bash
-netlify deploy --prod  # first time: pick "Create & configure a new site"
-```
-
-After the first deploy, future deploys are just `netlify deploy --prod` from the same folder.
-
-## After deploy
-
-1. Open your URL on phone + desktop to confirm it loads.
-2. If you baked credentials into `config.js` (recommended), the app is already cloud-synced on first paint. Look for the green "live" dot next to the gear icon.
-3. If you skipped `config.js`, each user opens the URL, taps the gear icon → **Supabase sync**, and pastes the same Project URL + anon key.
-
-**Sharing with your group** (with `config.js` filled in): send the Netlify URL, and send the group passcode separately and privately. They open the link, enter the passcode once, and they're in.
-
-> The old `/cred`, `/splitwise` and `/light` variant URLs no longer exist; only `/` is served.
-
-## Updating after deploy
-
-Edit any file locally, then drag the folder onto Netlify again (or `netlify deploy --prod`). The cache headers in `netlify.toml` make HTML revalidate on every load so users pick up changes immediately.
-
-## Custom domain (optional)
-
-In Netlify: **Site settings → Domain management → Add custom domain**. Point your domain's DNS to Netlify per their instructions. Free Let's Encrypt SSL is automatic.
+Netlify → **Domain management → Add custom domain**, then point your DNS to
+Netlify. HTTPS is automatic. A domain is needed before the Android/iOS apps
+(invite links that open the app).

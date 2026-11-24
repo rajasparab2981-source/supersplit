@@ -1,29 +1,49 @@
-# Netlify configuration for SplitPro
-# Drag the SplitPro folder into app.netlify.com/drop or run `netlify deploy --prod`.
+# Netlify configuration for SplitPro.
+# The site is linked to GitHub: every push to `main` builds and publishes.
+# Pull requests get their own preview URL automatically.
 
 [build]
-  publish = "."
+  command = "npm ci && npm test && npm run build"
+  publish = "dist"
 
-# Don't cache HTML files — we want users to pick up updates immediately.
+[build.environment]
+  NODE_VERSION = "22"
+
+# HTML and the service worker must never be cached, so updates reach users.
 [[headers]]
-  for = "/*.html"
+  for = "/index.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Cache JS / CSS / fonts hard. We don't fingerprint, so bust by bumping a query string
-# (e.g. <script src="db.js?v=2">) when shipping breaking changes.
 [[headers]]
-  for = "/*.css"
+  for = "/sw.js"
   [headers.values]
-    Cache-Control = "public, max-age=3600"
+    Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
-  for = "/*.js"
+  for = "/manifest.webmanifest"
   [headers.values]
-    Cache-Control = "public, max-age=3600"
+    Content-Type = "application/manifest+json"
 
-# Make the canonical app the root URL.
+# Vite fingerprints everything in /assets (file names change with content),
+# so these can be cached forever.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Baseline security headers.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), geolocation=(), microphone=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+# Single-page app: any unknown path loads the app.
 [[redirects]]
-  from = "/"
+  from = "/*"
   to = "/index.html"
   status = 200
