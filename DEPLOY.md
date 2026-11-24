@@ -1,5 +1,9 @@
 # Deploy SplitPro to Netlify
 
+> **Security:** the database is locked with a group passcode. See "Security" in README.md and
+> `supabase/phase0-lockdown.sql`. Always deploy app changes **before** running new lockdown SQL.
+> Bump the `?v=` on the `<script>` tags in `index.html` whenever `db.js` or `config.js` changes.
+
 ## Before deploy — bake in your Supabase credentials (recommended)
 
 So your friends don't have to paste anything to join. Open `config.js` and fill in the two values:
@@ -53,20 +57,9 @@ After the first deploy, future deploys are just `netlify deploy --prod` from the
 2. If you baked credentials into `config.js` (recommended), the app is already cloud-synced on first paint. Look for the green "live" dot next to the gear icon.
 3. If you skipped `config.js`, each user opens the URL, taps the gear icon → **Supabase sync**, and pastes the same Project URL + anon key.
 
-**Sharing with your group** (with `config.js` filled in): just send the Netlify URL. That's it. No keys to copy, no SQL to run, no settings to find. They open the link and they're already inside the shared group.
+**Sharing with your group** (with `config.js` filled in): send the Netlify URL, and send the group passcode separately and privately. They open the link, enter the passcode once, and they're in.
 
-## Variant URLs
-
-Once deployed, these all work:
-
-| URL | Variant |
-|-----|---------|
-| `/` | Canonical (dark, Cred + Splitwise merged) |
-| `/cred` | Cred-style dark |
-| `/splitwise` | Splitwise-classic refined |
-| `/light` | Original light teal |
-
-The redirects are configured in `netlify.toml`.
+> The old `/cred`, `/splitwise` and `/light` variant URLs no longer exist; only `/` is served.
 
 ## Updating after deploy
 

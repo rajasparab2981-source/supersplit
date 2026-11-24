@@ -43,6 +43,20 @@ Tap **Gear icon → Supabase sync** and paste your Project URL + anon public key
 
 Edit `config.js` and paste your Supabase URL + anon key. When deployed, anyone opening the URL gets auto-connected on first paint — no gear icon, no copy-paste. See **`DEPLOY.md`**.
 
+## Security: group passcode (Phase 0 lockdown)
+
+The shared database is protected by Row Level Security plus a **group passcode**.
+The anon key in `config.js` is public by design; without the passcode it returns
+no data and cannot write. Each person enters the passcode once per device.
+
+- Set up / lock the database: run [`supabase/phase0-lockdown.sql`](supabase/phase0-lockdown.sql) in the Supabase SQL Editor (edit the passcode line first).
+- Change the passcode: `select private.set_passcode('new-passcode');`. Everyone is asked again on their next refresh.
+- "Reset all data" is disabled in cloud mode. Delete groups individually.
+- Realtime WebSocket events stop under RLS; the 5-second refresh keeps devices in sync.
+
+This is a stopgap until real user accounts (Phase 3). **Do not** run the
+`disable row level security` lines in the legacy schema below on a live project.
+
 ## Supabase setup (one-time)
 
 1. Go to [supabase.com](https://supabase.com) → sign up free → **New Project**
@@ -122,8 +136,9 @@ alter table expenses disable row level security;
 | `splitpro_supabase_v1` | Supabase config `{ url, key }` if connected, or `{ disconnected: true }` |
 | `splitpro_self_v1` | `{ groupId: memberName }` — who "you" are per group |
 | `splitpro_upi_v1` | `{ memberName: upiId }` — cached UPI IDs for Settle Up's Pay button |
+| `splitpro_passcode_v1` | Group passcode, sent as the `x-splitpro-key` header |
 
-All four are device-local — they don't sync via Supabase.
+All five are device-local — they don't sync via Supabase.
 
 ## Notes
 

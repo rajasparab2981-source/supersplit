@@ -42,7 +42,28 @@
 (function () {
   const STORAGE_KEY    = 'splitpro_data_v1';
   const SUPA_CONFIG_KEY = 'splitpro_supabase_v1';
+  const PASSCODE_KEY    = 'splitpro_passcode_v1';
   const TABLES = ['groups', 'members', 'trips', 'expenses'];
+
+  // Phase 0 lockdown: the database requires a group passcode, sent as the
+  // `x-splitpro-key` header (see supabase/phase0-lockdown.sql).
+  //   'ok'             — connected (passcode accepted, or DB not locked yet)
+  //   'needs_passcode' — DB is locked and we have no valid passcode
+  let access = 'ok';
+
+  function loadPasscode() {
+    try { return localStorage.getItem(PASSCODE_KEY) || ''; } catch { return ''; }
+  }
+  function savePasscode(p) {
+    try {
+      if (p) localStorage.setItem(PASSCODE_KEY, p);
+      else localStorage.removeItem(PASSCODE_KEY);
+    } catch {}
+  }
+
+  class PasscodeError extends Error {
+    constructor(msg) { super(msg || 'Group passcode required'); this.name = 'PasscodeError'; }
+  }
 
   // ============================================================
   // Shared listeners + state snapshot
@@ -228,6 +249,15 @@
       );
       const err = groups.error || members.error || trips.error || expenses.error;
       if (err) throw err;
+      // RLS hides rows silently instead of erroring. If everything we had just
+      // vanished, the passcode was probably rotated — re-check before wiping
+      // the screen.
+      const hadData = state.groups.length > 0 || state.expenses.length > 0;
+      const gotNothing = (groups.data || []).length === 0 && (expenses.data || []).length === 0;
+      if (hadData && gotNothing && !(await checkAccess())) {
+        lockOut();
+        return;
+      }
       setState({
         groups:   groups.data || [],
         members:  members.data || [],
@@ -267,12 +297,40 @@
       pollTimer = null;
     }
 
+    // true  = passcode accepted, or the lockdown SQL hasn't been run yet
+    // false = database is locked and this passcode is missing/wrong
+    async function checkAccess() {
+      if (!client) return false;
+      const { data, error } = await client.rpc('splitpro_check_access');
+      if (error) {
+        // Function doesn't exist → lockdown not applied yet → DB is still open.
+        if (error.code === 'PGRST202' || error.code === '42883') return true;
+        throw error;
+      }
+      return data === true;
+    }
+
+    function lockOut() {
+      stopPolling();
+      stopRealtime();
+      access = 'needs_passcode';
+      setState({ groups: [], members: [], trips: [], expenses: [] });
+    }
+
     return {
-      async connect(url, key) {
+      async connect(url, key, passcode) {
         await loadSupabaseSDK();
+        stopPolling();
+        stopRealtime();
         client = window.supabase.createClient(url, key, {
           realtime: { params: { eventsPerSecond: 5 } },
+          global: passcode ? { headers: { 'x-splitpro-key': passcode } } : {},
         });
+        if (!(await checkAccess())) {
+          lockOut();
+          throw new PasscodeError(passcode ? 'Wrong passcode' : 'Group passcode required');
+        }
+        access = 'ok';
         await refreshAll();
         startRealtime();
         startPolling();
@@ -384,12 +442,9 @@
       },
 
       resetAll: async () => {
-        // Delete in FK-safe order: expenses, trips, members, groups
-        for (const t of ['expenses', 'trips', 'members', 'groups']) {
-          const { error } = await client.from(t).delete().not('id', 'is', null);
-          if (error) throw error;
-        }
-        await refreshAll();
+        // Disabled: this wiped the shared database for every friend at once.
+        // Delete individual groups instead.
+        throw new Error('Reset is disabled for shared cloud data. Delete groups individually instead.');
       },
 
       testConnection: async (url, key) => {
@@ -451,9 +506,12 @@
         Local.detach();
         mode = 'supabase';
         backend = Supa;
-        await Supa.connect(supaConfig.url, supaConfig.key);
+        await Supa.connect(supaConfig.url, supaConfig.key, loadPasscode());
         return;
       } catch (e) {
+        // Locked database: stay in cloud mode and let the UI ask for the
+        // passcode, rather than silently showing an empty local workspace.
+        if (e instanceof PasscodeError) return;
         console.warn('SplitPro: Supabase connect failed, falling back to local.', e);
         mode = 'local';
         backend = Local;
@@ -497,11 +555,35 @@
       supaConfig = { url, key };
       mode = 'supabase';
       backend = Supa;
-      await Supa.connect(url, key);
+      try {
+        await Supa.connect(url, key, loadPasscode());
+      } catch (e) {
+        if (e instanceof PasscodeError) return; // UI shows the passcode screen
+        throw e;
+      }
+    },
+
+    getAccess() { return access; },
+
+    // Try a passcode. Saves it on this device only if the database accepts it.
+    async unlock(passcode) {
+      const p = String(passcode || '').trim();
+      if (!supaConfig) throw new Error('Not connected to Supabase');
+      await Supa.connect(supaConfig.url, supaConfig.key, p); // throws PasscodeError if wrong
+      savePasscode(p);
+    },
+
+    // Remove the saved passcode from this device and lock the app.
+    async forgetPasscode() {
+      savePasscode('');
+      if (mode === 'supabase' && supaConfig) {
+        try { await Supa.connect(supaConfig.url, supaConfig.key, ''); } catch {}
+      }
     },
 
     async disconnect() {
       await Supa.disconnect();
+      access = 'ok';
       // Record explicit opt-out so a built-in config.js doesn't auto-reconnect.
       localStorage.setItem(SUPA_CONFIG_KEY, JSON.stringify({ disconnected: true }));
       supaConfig = null;

@@ -1030,8 +1030,9 @@
   <!-- Optional built-in cloud credentials. If config.js is missing (404),
        the page works fine in local mode. If present with values, friends
        who open the deployed URL get auto-connected on first paint. -->
-  <script src="config.js"></script>
-  <script src="db.js"></script>
+  <!-- ?v= busts Netlify's 1-hour JS cache; bump it whenever db.js changes. -->
+  <script src="config.js?v=2"></script>
+  <script src="db.js?v=2"></script>
 
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useMemo, useCallback } = React;
@@ -3213,7 +3214,60 @@ alter table expenses add column if not exists image_url text;`;
       );
     }
 
-    function SettingsSheet({ open, onClose, mode, supaConfig, onOpenSupabase, onResetAll }) {
+    // Shown when the cloud database is locked (Phase 0 lockdown) and this
+    // device has no valid group passcode yet.
+    function PasscodeGate({ onUseLocal }) {
+      const [code, setCode] = useState('');
+      const [busy, setBusy] = useState(false);
+      const [error, setError] = useState('');
+
+      const submit = async (e) => {
+        if (e) e.preventDefault();
+        if (!code.trim() || busy) return;
+        setBusy(true); setError('');
+        try {
+          await DB.unlock(code);
+        } catch (err) {
+          setError(err && err.name === 'PasscodeError'
+            ? 'That passcode didn’t work. Check with whoever runs your group.'
+            : 'Couldn’t reach the server: ' + ((err && err.message) || err));
+        } finally {
+          setBusy(false);
+        }
+      };
+
+      return (
+        <main className="app-content">
+          <form className="empty" onSubmit={submit} style={{ maxWidth: 360, margin: '0 auto' }}>
+            <div className="emoji-bubble">🔒</div>
+            <h3>Enter group passcode</h3>
+            <p>Your group’s data is now protected. Ask the group admin for the passcode. You only need to enter it once on this device.</p>
+            <div className="field" style={{ textAlign: 'left', marginTop: 20 }}>
+              <label className="field-label" htmlFor="sp-passcode">Passcode</label>
+              <input
+                id="sp-passcode"
+                type="password"
+                autoComplete="current-password"
+                autoFocus={!IS_TOUCH}
+                value={code}
+                onChange={(e) => { setCode(e.target.value); setError(''); }}
+                enterKeyHint="go"
+              />
+            </div>
+            {error && <p className="split-hint" role="alert" style={{ color: 'var(--negative)', textAlign: 'left' }}>{error}</p>}
+            <button type="submit" className="btn btn-primary btn-full" disabled={!code.trim() || busy}>
+              {busy ? 'Checking…' : 'Unlock'}
+            </button>
+            <div className="spacer-2" />
+            <button type="button" className="btn btn-ghost btn-full" onClick={onUseLocal}>
+              Use offline on this device instead
+            </button>
+          </form>
+        </main>
+      );
+    }
+
+    function SettingsSheet({ open, onClose, mode, supaConfig, onOpenSupabase, onResetAll, onForgetPasscode }) {
       return (
         <Sheet open={open} onClose={onClose} title="Settings">
           <div className="settings-item" onClick={onOpenSupabase} style={{ cursor: 'pointer' }}>
@@ -3244,10 +3298,22 @@ alter table expenses add column if not exists image_url text;`;
           </div>
 
           <div className="spacer-3" />
-          <button className="btn btn-danger btn-full" onClick={onResetAll}>Reset all data</button>
-          <p style={{ color: 'var(--text-mute)', fontSize: 12, textAlign: 'center', marginTop: 10 }}>
-            Permanently deletes everything in {mode === 'supabase' ? 'Supabase' : 'localStorage'}.
-          </p>
+          {mode === 'supabase' ? (
+            // Shared cloud data: no one-tap wipe for the whole group.
+            <React.Fragment>
+              <button className="btn btn-ghost btn-full" onClick={onForgetPasscode}>Forget passcode on this device</button>
+              <p style={{ color: 'var(--text-mute)', fontSize: 12, textAlign: 'center', marginTop: 10 }}>
+                Use this on a shared or borrowed phone. You’ll need the passcode to get back in.
+              </p>
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <button className="btn btn-danger btn-full" onClick={onResetAll}>Reset all data</button>
+              <p style={{ color: 'var(--text-mute)', fontSize: 12, textAlign: 'center', marginTop: 10 }}>
+                Permanently deletes everything in localStorage on this device.
+              </p>
+            </React.Fragment>
+          )}
         </Sheet>
       );
     }
@@ -3256,11 +3322,14 @@ alter table expenses add column if not exists image_url text;`;
       const [snap, setSnap] = useState(DB.snapshot());
       const [mode, setMode] = useState(DB.getMode ? DB.getMode() : 'local');
       const [supaConfig, setSupaConfig] = useState(DB.getConfig ? DB.getConfig() : null);
+      // Guarded: a stale cached db.js (pre-lockdown) has no getAccess().
+      const [access, setAccess] = useState(DB.getAccess ? DB.getAccess() : 'ok');
 
       useEffect(() => DB.subscribe((s) => {
         setSnap(s);
         if (DB.getMode) setMode(DB.getMode());
         if (DB.getConfig) setSupaConfig(DB.getConfig());
+        if (DB.getAccess) setAccess(DB.getAccess());
       }), []);
 
       const [selfMap, setSelfMap] = useState(loadSelf());
@@ -3492,6 +3561,22 @@ alter table expenses add column if not exists image_url text;`;
         await DB.disconnect();
         toast('Disconnected — using local storage', 'success');
       };
+      const forgetPasscode = async () => {
+        setSettingsOpen(false);
+        setView({ name: 'groups' });
+        await DB.forgetPasscode();
+        toast('Passcode removed from this device', 'success');
+      };
+
+      if (mode === 'supabase' && access === 'needs_passcode') {
+        return (
+          <div className="app">
+            <Header title="SplitPro" subtitle="Split bills in ₹" />
+            <PasscodeGate onUseLocal={disconnectSupabase} />
+            <ToastStack toasts={toasts} />
+          </div>
+        );
+      }
 
       let headerProps;
       const baseHeader = { onCalc: () => setCalcOpen(true), onSettings: () => setSettingsOpen(true), syncStatus: mode === 'supabase' ? 'live' : null };
@@ -3595,6 +3680,7 @@ alter table expenses add column if not exists image_url text;`;
             supaConfig={supaConfig}
             onOpenSupabase={() => { setSettingsOpen(false); setSupabaseOpen(true); }}
             onResetAll={resetAll}
+            onForgetPasscode={forgetPasscode}
           />
           <SupabaseSetupSheet
             open={supabaseOpen}
