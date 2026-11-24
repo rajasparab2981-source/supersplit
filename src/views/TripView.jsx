@@ -9,10 +9,14 @@ import { SettleTab } from './SettleTab';
 import { TripRecap } from './TripRecap';
 
 // ---------- Trip view ----------
-export function TripView({ group, trip, members, expenses, self, onAddExpense, onEditExpense, onDeleteTrip, onPay, onOpenActions, onReact }) {
+export function TripView({ group, trip, members, expenses: allEntries, self, onAddExpense, onEditExpense, onDeleteTrip, onPay, onMarkPaid, onUndoPayment, onOpenActions, onReact }) {
   const [tab, setTab] = useState('expenses');
+  // Recorded payments arrive as synthetic entries (is_settlement): they count
+  // towards balances but are not spending, so lists and totals exclude them.
+  const expenses = useMemo(() => allEntries.filter((e) => !e.is_settlement), [allEntries]);
+  const payments = useMemo(() => allEntries.filter((e) => e.is_settlement), [allEntries]);
   const total = useMemo(() => expenses.reduce((s, e) => s + Number(e.amount || 0), 0), [expenses]);
-  const balances = useMemo(() => calcBalances(expenses), [expenses]);
+  const balances = useMemo(() => calcBalances(allEntries), [allEntries]);
   const settlements = useMemo(() => calcSettlements(balances), [balances]);
   const youNet = self ? (balances.find((b) => b.name === self)?.net || 0) : 0;
 
@@ -100,7 +104,8 @@ export function TripView({ group, trip, members, expenses, self, onAddExpense, o
 
       {tab === 'expenses' && <ExpensesTab expenses={expenses} self={self} onEdit={onEditExpense} onReact={onReact} />}
       {tab === 'balances' && <BalancesTab balances={balances} self={self} expenses={expenses} />}
-      {tab === 'settle'   && <SettleTab settlements={settlements} balances={balances} self={self} onPay={(s) => onPay(s, trip)} />}
+      {tab === 'settle'   && <SettleTab settlements={settlements} balances={balances} self={self} payments={payments}
+        onPay={(s) => onPay(s, trip)} onMarkPaid={(s) => onMarkPaid(s, trip)} onUndoPayment={onUndoPayment} />}
 
       {expenses.length >= 2 && <TripRecap trip={trip} group={group} expenses={expenses} balances={balances} />}
 

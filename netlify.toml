@@ -47,3 +47,26 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# ------------------------------------------------------------
+# Which Supabase project each build talks to (public values only).
+# Deploy previews and branch builds use STAGING.
+# SWITCHOVER: when v2 goes live, point production at the production
+# project's URL + publishable key (see supabase/SWITCHOVER.md).
+# Until then production also uses staging, so an accidental merge
+# shows an empty staging app instead of touching live v1 data.
+# ------------------------------------------------------------
+[context.deploy-preview.environment]
+  VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
+  VITE_APP_ENV = "staging"
+
+[context.branch-deploy.environment]
+  VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
+  VITE_APP_ENV = "staging"
+
+[context.production.environment]
+  VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
+  VITE_APP_ENV = "staging"

@@ -152,7 +152,7 @@ export function ExpensesTab({ expenses, self, onEdit, onReact }) {
                     <div className="exp-main">
                       <p className="exp-desc">{e.description}</p>
                       <p className="exp-payer">
-                        {e.paid_by === self ? 'You' : e.paid_by} paid {fmtINR(e.amount)} · {splitters.length} split{e.shares && Object.keys(e.shares).length > 0 ? ' · unequal' : ''}
+                        {e.paid_by === self ? 'You' : e.paid_by} paid {fmtINR(e.amount)} · {splitters.length} split{e.split_mode && e.split_mode !== 'equal' ? ' · unequal' : ''}
                       </p>
                     </div>
                     {e.image_url && (

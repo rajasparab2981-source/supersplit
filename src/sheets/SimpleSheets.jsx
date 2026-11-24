@@ -65,32 +65,3 @@ export function AddTripSheet({ open, onClose, onCreate }) {
     </Sheet>
   );
 }
-
-export function SelfPickerSheet({ open, onClose, members, current, onPick }) {
-  return (
-    <Sheet open={open} onClose={onClose} title="Who are you?">
-      <p style={{ color: 'var(--text-soft)', fontSize: 13, marginTop: 0 }}>
-        Pick yourself from the group's members. The app uses this to show personalized "you owe" / "you're owed" amounts.
-      </p>
-      <div className="spacer-1" />
-      <div>
-        {members.map((m) => (
-          <div key={m.id} className="exp-row" onClick={() => { onPick(m.name); onClose(); }}>
-            <Avatar name={m.name} size="lg" />
-            <div className="exp-main">
-              <p className="exp-desc">{m.name}</p>
-              {m.name === current && <p className="exp-payer" style={{ color: 'var(--primary)' }}>Currently selected</p>}
-            </div>
-            {m.name === current && <Icon.Check style={{ color: 'var(--primary)' }} />}
-          </div>
-        ))}
-        {current && (
-          <React.Fragment>
-            <div className="spacer-2" />
-            <button className="btn btn-ghost btn-full" onClick={() => { onPick(null); onClose(); }}>Clear selection</button>
-          </React.Fragment>
-        )}
-      </div>
-    </Sheet>
-  );
-}

@@ -22,7 +22,7 @@ export function GroupView({ group, members, trips, self, tripSummaries, onOpenTr
               <span style={{ color: 'var(--text-mute)' }}>not set</span>
             )}
           </span>
-          <button onClick={onChangeSelf}>{self ? 'Change' : 'Pick'}</button>
+          <button onClick={onChangeSelf}>Invite</button>
         </div>
       )}
 
@@ -62,7 +62,7 @@ export function GroupView({ group, members, trips, self, tripSummaries, onOpenTr
         ) : (
           <React.Fragment>
             <p className="net" style={{ color: group.color }}>{fmtINR(totalSpent)}</p>
-            <p className="sub">Total spent · pick yourself for personalized balance</p>
+            <p className="sub">Total spent</p>
           </React.Fragment>
         )}
         <div className="summary-split">
