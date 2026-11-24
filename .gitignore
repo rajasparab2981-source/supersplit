@@ -18,3 +18,8 @@ dist/
 .vite/
 coverage/
 *.log
+
+# OAuth client secrets (Google Cloud downloads) - never commit
+client_secret*.json
+*.secret.json
+.env*.local
