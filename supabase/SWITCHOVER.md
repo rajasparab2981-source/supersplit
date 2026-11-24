@@ -60,8 +60,8 @@ week, then is paused (restorable for 90 days). Expected downtime: ~15 minutes.
 ## Rollback
 - **Before step 8** (app not switched yet): nothing to undo for users; the v1 app
   still talks to Tokyo, which was never modified.
-- **After step 8**: Netlify → Deploys → the last v1 deploy (`main@62afdd7` or earlier
-  Phase 1 deploy) → **Publish deploy**. Users are back on v1 + Tokyo instantly.
+- **After step 8**: Netlify → Deploys → the last v1 deploy (`main@b006f06`, the
+  Phase 1 release) → **Publish deploy**. Users are back on v1 + Tokyo instantly.
   Anything entered in v2 meanwhile would need re-entering in v1.
 
 ## After go-live
