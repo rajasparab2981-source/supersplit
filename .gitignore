@@ -12,3 +12,9 @@ index.html.backup
 Thumbs.db
 desktop.ini
 node_modules/
+
+# Build output
+dist/
+.vite/
+coverage/
+*.log
