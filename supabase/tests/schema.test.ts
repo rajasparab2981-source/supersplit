@@ -35,6 +35,18 @@ describe('signup and groups', () => {
     expect(p.display_name).toBe('Asha');
   });
 
+  it('linking Google later fills in the real name, but never overwrites a chosen one', async () => {
+    const id = (await db.admin<{ id: string }>(
+      `insert into auth.users (email, raw_user_meta_data) values ('priya.k@example.test', '{}') returning id`))[0]!.id;
+    const name = async () => (await db.admin<{ n: string }>('select display_name as n from profiles where id = $1', [id]))[0]!.n;
+    expect(await name()).toBe('priya.k'); // placeholder from the email address
+    await db.admin(`update auth.users set raw_user_meta_data = '{"full_name":"Priya Kulkarni"}' where id = $1`, [id]);
+    expect(await name()).toBe('Priya Kulkarni');
+    await db.admin(`update profiles set display_name = 'PK' where id = $1`, [id]);
+    await db.admin(`update auth.users set raw_user_meta_data = '{"full_name":"Priya K (Google)"}' where id = $1`, [id]);
+    expect(await name()).toBe('PK');
+  });
+
   it('makes the creator the owner, and create_group is idempotent', async () => {
     const m = await one(db.as<{ role: string; user_id: string }>(asha, 'select role, user_id from group_members where id = $1', [ashaM]));
     expect(m).toMatchObject({ role: 'owner', user_id: asha });
