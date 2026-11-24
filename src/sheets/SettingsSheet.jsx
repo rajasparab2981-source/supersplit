@@ -62,6 +62,11 @@ export function SettingsSheet({ open, onClose, toast }) {
 
       <div className="spacer-3" />
       <button className="btn btn-ghost btn-full" onClick={async () => { onClose(); await DB.signOut(); }}>Sign out</button>
+      <p style={{ color: 'var(--text-mute)', fontSize: 12, textAlign: 'center', marginTop: 12 }}>
+        <a href="/privacy" style={{ color: 'var(--text-soft)' }}>Privacy Policy</a>
+        {' · '}
+        <a href="mailto:splitpro.app@gmail.com?subject=SplitPro%20account%20deletion" style={{ color: 'var(--text-soft)' }}>Request account deletion</a>
+      </p>
     </Sheet>
   );
 }

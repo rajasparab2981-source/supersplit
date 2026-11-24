@@ -89,6 +89,10 @@ export function SignInScreen({ joining }) {
           </form>
         )}
 
+        <p style={{ color: 'var(--text-mute)', fontSize: 12, marginTop: 20 }}>
+          By continuing you agree to how we handle your data, as described in our{' '}
+          <a href="/privacy" style={{ color: 'var(--primary)' }}>Privacy Policy</a>.
+        </p>
 
         {DB.isStaging() && (
           <div style={{ marginTop: 28, textAlign: 'left', borderTop: '1px dashed var(--border-2)', paddingTop: 12 }}>
