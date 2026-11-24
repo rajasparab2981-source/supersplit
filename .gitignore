@@ -23,3 +23,6 @@ coverage/
 client_secret*.json
 *.secret.json
 .env*.local
+
+# Database dumps belong in backups/ (ignored); never at the repo root
+/*.sql
