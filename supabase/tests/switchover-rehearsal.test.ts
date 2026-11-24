@@ -52,8 +52,11 @@ alter table public.legacy_expenses rename to expenses;`;
 interface V1Data { groups: any[]; members: any[]; trips: any[]; expenses: any[] }
 
 function latestBackup(): V1Data | null {
-  const dir = join(ROOT, 'backups', 'live-2026-11-24');
-  if (!existsSync(dir)) return null;
+  // Newest live export (backups/live-YYYY-MM-DD/).
+  const base = join(ROOT, 'backups');
+  const latest = existsSync(base) ? readdirSync(base).filter((d) => /^live-\d{4}-\d{2}-\d{2}$/.test(d)).sort().pop() : undefined;
+  if (!latest) return null;
+  const dir = join(base, latest);
   const file = (t: string) => readdirSync(dir).filter((f) => f.endsWith(`-${t}.json`)).sort().pop();
   const read = (t: string) => JSON.parse(readFileSync(join(dir, file(t)!), 'utf8'));
   return { groups: read('groups'), members: read('members'), trips: read('trips'), expenses: read('expenses') };

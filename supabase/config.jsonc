@@ -186,7 +186,7 @@
     "enabled": true,
     // The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
     // in emails.
-    "site_url": "http://localhost:5173",
+    "site_url": "https://supersplit.netlify.app",
     // The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
     // "external_url": "",
     // A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
@@ -211,9 +211,9 @@
     // Allow/disallow new user signups to your project. Existing users can still sign in.
     "enable_signup": true,
     // Allow/disallow anonymous sign-ins to your project.
-    // STAGING ONLY (throwaway test users). Must be false for production:
-    // never `config push` this file to the live project without setting this to false.
-    "enable_anonymous_sign_ins": true,
+    // PRODUCTION (since go-live, 2026-11-25): no anonymous/test users.
+    // Only enable on a separate staging project.
+    "enable_anonymous_sign_ins": false,
     // Allow/disallow testing manual linking of accounts
     "enable_manual_linking": false,
     // Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
