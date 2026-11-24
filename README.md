@@ -56,13 +56,46 @@ are rewritten for the new data model in Phase 2–4.
 - Older expenses whose custom shares didn't add up (allowed by the original
   ±₹0.50 tolerance) are treated as the payer absorbing the gap.
 
+## Database v2 (Phase 2, not live yet)
+
+`supabase/migrations/` holds the new schema. It goes live with sign-in
+(Phase 3), following [`supabase/SWITCHOVER.md`](supabase/SWITCHOVER.md).
+
+- Members have IDs (placeholders until someone claims them via an invite);
+  amounts are integer paise; payers and splits must add up (checked at commit).
+- Recorded settlements, activity log, soft delete with restore.
+- Row Level Security: you can read only groups you belong to. All writes go
+  through database functions (`create_expense`, `record_settlement`,
+  `accept_invite`, …) that validate input. Anonymous visitors get nothing.
+- Receipts in a private Storage bucket, per-group folders.
+- `private.import_legacy()` imports v1 data with identical balance maths.
+
+`npm test` runs the migrations in an in-memory Postgres (PGlite) and checks
+the access rules, money rules, invites and import, including your real backup
+when `backups/` is present locally.
+
+### Staging project
+
+`splitpro-staging` (Mumbai) is a separate free Supabase project for trying
+migrations before production. The CLI is linked to it (`supabase/.temp`, not
+committed).
+
+```bash
+npx supabase db push --remote --dry-run          # what would change
+npx supabase db push --remote                    # apply new migrations to staging
+npx supabase db advisors --remote                # Supabase security/performance checks
+npx supabase db query --remote -f supabase/tests/staging-smoke.sql   # live checks, rolled back
+```
+
+Always check the `Target:` line says **splitpro-staging** before confirming.
+
 ## Security: group passcode (Phase 0 lockdown)
 
 The shared database is protected by Row Level Security plus a **group passcode**.
 The anon key in `src/config.ts` is public by design; without the passcode it
 returns no data and cannot write. Each person enters the passcode once per device.
 
-- Set up / lock a database: run [`supabase/phase0-lockdown.sql`](supabase/phase0-lockdown.sql) in the Supabase SQL Editor (edit the passcode line first, and never commit the real passcode).
+- Set up / lock a database: run [`supabase/legacy/phase0-lockdown.sql`](supabase/legacy/phase0-lockdown.sql) in the Supabase SQL Editor (edit the passcode line first, and never commit the real passcode).
 - Change the passcode: `select private.set_passcode('new-passcode');` Everyone is asked again on their next refresh.
 - "Reset all data" is disabled in cloud mode.
 - Realtime WebSocket events stop under RLS; the 5-second refresh keeps devices in sync.

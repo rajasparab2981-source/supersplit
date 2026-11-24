@@ -1,13 +1,15 @@
-// Supabase project the deployed app connects to by default.
+// Which Supabase project the app talks to.
 //
-// The anon key is designed to be public: on its own it can read nothing,
-// because Row Level Security requires the group passcode (Phase 0) and,
-// from Phase 3, a signed-in user. Override per environment with
-// VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY (e.g. a staging project).
+// Set per environment with VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+// (.env.development for local dev, netlify.toml contexts for deploys).
+// The fallback is STAGING, never production, so a misconfigured build can
+// never write to live data. Keys here are publishable (public by design);
+// Row Level Security decides what each signed-in user can do.
+
+const STAGING_URL = 'https://ajcepfpmasykfrdfhtzq.supabase.co';
+const STAGING_KEY = 'sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP';
 
 export const builtinConfig = {
-  supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? 'https://uardivkwulfjwgmwmsqn.supabase.co',
-  supabaseKey:
-    import.meta.env.VITE_SUPABASE_ANON_KEY ??
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhcmRpdmt3dWxmandnbXdtc3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5MTY4MjksImV4cCI6MjA5NDQ5MjgyOX0.VY6nVS0WcuTCem2HWQknBwQ1KQ6JvgN6q0KlODq8egE',
+  supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? STAGING_URL,
+  supabaseKey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? STAGING_KEY,
 };

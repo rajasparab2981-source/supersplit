@@ -1,3 +1,5 @@
+// Must run before the Supabase client is created (it clears sign-in errors from the URL).
+import './lib/authRedirect';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

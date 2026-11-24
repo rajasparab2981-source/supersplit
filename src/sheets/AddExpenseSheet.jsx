@@ -37,7 +37,8 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
       setPaidBy(editing.paid_by || (self || members[0]?.name || ''));
       setSplitAmong(Array.isArray(editing.split_among) ? [...editing.split_among] : members.map((m) => m.name));
       setImageUrl(editing.image_url || null);
-      if (editing.shares && Object.keys(editing.shares).length > 0) {
+      // v2 always carries exact amounts in `shares`; equal splits reopen as equal.
+      if (editing.split_mode !== 'equal' && editing.shares && Object.keys(editing.shares).length > 0) {
         setSplitMode('exact');
         const inputs = {};
         for (const [k, v] of Object.entries(editing.shares)) inputs[k] = String(v);
@@ -113,6 +114,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
       description: description.trim(), amount: amt, paid_by: paidBy,
       split_among: computed.splitAmong, category, expense_date: date,
       shares: computed.shares,
+      split_mode: splitMode,
       image_url: imageUrl,
     };
     if (isEdit) onUpdate(editing.id, payload);

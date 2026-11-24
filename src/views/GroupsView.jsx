@@ -27,7 +27,7 @@ export function GroupsView({ groups, groupSummaries, onOpen, onAdd }) {
           ) : (
             <React.Fragment>
               <p className="net pos">{fmtINR(totalSpent)}</p>
-              <p className="sub">Across {groups.length} group{groups.length === 1 ? '' : 's'} · pick yourself in a group to see "you owe"</p>
+              <p className="sub">Across {groups.length} group{groups.length === 1 ? '' : 's'}</p>
             </React.Fragment>
           )}
         </div>

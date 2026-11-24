@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { DB } from './db/db';
 import { fmtINR } from './lib/money';
 import { youLine } from './lib/splits';
-import { loadSelf, loadUpiMap, saveSelf, saveUpiMap } from './lib/storage';
+import { loadUpiMap, saveUpiMap } from './lib/storage';
 import { AddExpenseSheet } from './sheets/AddExpenseSheet';
 import { CalculatorSheet } from './sheets/CalculatorSheet';
-import { PasscodeGate } from './sheets/PasscodeGate';
+import { InviteSheet } from './sheets/InviteSheet';
+import { JoinScreen } from './sheets/JoinScreen';
 import { SettingsSheet } from './sheets/SettingsSheet';
-import { AddGroupSheet, AddMemberSheet, AddTripSheet, SelfPickerSheet } from './sheets/SimpleSheets';
-import { SupabaseSetupSheet } from './sheets/SupabaseSetupSheet';
+import { SignInScreen } from './sheets/SignInScreen';
+import { AddGroupSheet, AddMemberSheet, AddTripSheet } from './sheets/SimpleSheets';
 import { UpiPaySheet } from './sheets/UpiPaySheet';
 import { Icon } from './ui/Icon';
 import { ActionsSheet, ConfirmSheet, Header, ToastStack, useToasts } from './ui/primitives';
@@ -16,35 +17,44 @@ import { GroupView } from './views/GroupView';
 import { GroupsView } from './views/GroupsView';
 import { TripView } from './views/TripView';
 
+const JOIN_KEY = 'splitpro_pending_join';
+
+/** Invite token from /join/<token>, remembered across the sign-in redirect. */
+function readJoinToken() {
+  const m = window.location.pathname.match(/^\/join\/([A-Za-z0-9_-]{16,})\/?$/);
+  if (m) {
+    try { sessionStorage.setItem(JOIN_KEY, m[1]); } catch { /* storage blocked */ }
+    window.history.replaceState(null, '', '/');
+    return m[1];
+  }
+  try { return sessionStorage.getItem(JOIN_KEY); } catch { return null; }
+}
+
 export function App() {
   const [snap, setSnap] = useState(DB.snapshot());
-  const [mode, setMode] = useState(DB.getMode ? DB.getMode() : 'local');
-  const [supaConfig, setSupaConfig] = useState(DB.getConfig ? DB.getConfig() : null);
-  // Guarded: a stale cached db.js (pre-lockdown) has no getAccess().
-  const [access, setAccess] = useState(DB.getAccess ? DB.getAccess() : 'ok');
+  const [authState, setAuthState] = useState(DB.getAuthState());
+  const [joinToken, setJoinToken] = useState(readJoinToken);
 
   useEffect(() => DB.subscribe((s) => {
     setSnap(s);
-    if (DB.getMode) setMode(DB.getMode());
-    if (DB.getConfig) setSupaConfig(DB.getConfig());
-    if (DB.getAccess) setAccess(DB.getAccess());
+    setAuthState(DB.getAuthState());
   }), []);
 
-  const [selfMap, setSelfMap] = useState(loadSelf());
-  const persistSelf = useCallback((m) => { saveSelf(m); setSelfMap(m); }, []);
+  // Who "you" are in each group comes from your account now.
+  const selfMap = useMemo(() => Object.fromEntries((snap.groups || []).map((g) => [g.id, DB.getSelfName(g.id)])), [snap]);
 
+  // Device-local fallback for UPI IDs of people without an account yet.
   const [upiMap, setUpiMap] = useState(loadUpiMap());
   const persistUpi = useCallback((m) => { saveUpiMap(m); setUpiMap(m); }, []);
 
   const [view, setView] = useState({ name: 'groups' });
   const [sheet, setSheet] = useState(null);
-  const [selfPickerOpen, setSelfPickerOpen] = useState(false);
-  const [supabaseOpen, setSupabaseOpen] = useState(false);
   const [upiPay, setUpiPay] = useState(null); // { transfer, trip }
   const [calcOpen, setCalcOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(null); // 'group' | 'trip' | null
   const [confirm, setConfirm] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const { toasts, push: toast } = useToasts();
 
   const groups = useMemo(() => DB.getGroups(), [snap]);
@@ -60,24 +70,18 @@ export function App() {
   }, [view, currentGroup, currentGroupTrips]);
   const currentTripExpenses = useMemo(() => currentTrip ? DB.getExpenses(currentTrip.id) : [], [currentTrip, snap]);
   const currentSelf = currentGroup ? selfMap[currentGroup.id] : null;
+  const myRole = currentGroup ? DB.getMyRole(currentGroup.id) : null;
 
-  // Auto-pick self if a group has exactly one member
-  useEffect(() => {
-    if (currentGroup && !currentSelf && currentGroupMembers.length === 1) {
-      persistSelf({ ...selfMap, [currentGroup.id]: currentGroupMembers[0].name });
-    }
-  }, [currentGroup, currentSelf, currentGroupMembers, selfMap, persistSelf]);
-
-  // ---------- Aggregates ----------
+  // ---------- Aggregates (payments count towards balances, not spending) ----------
   const groupSummaries = useMemo(() => {
     const out = {};
     for (const g of (snap.groups || [])) {
       const myName = selfMap[g.id];
       const tripIds = (snap.trips || []).filter((t) => t.group_id === g.id).map((t) => t.id);
-      const tripExpenses = (snap.expenses || []).filter((e) => tripIds.includes(e.trip_id));
-      const totalSpent = tripExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+      const entries = (snap.expenses || []).filter((e) => tripIds.includes(e.trip_id));
+      const totalSpent = entries.filter((e) => !e.is_settlement).reduce((s, e) => s + Number(e.amount || 0), 0);
       let net = 0;
-      if (myName) for (const e of tripExpenses) net += youLine(e, myName) || 0;
+      if (myName) for (const e of entries) net += youLine(e, myName) || 0;
       out[g.id] = { totalSpent, net, hasSelf: !!myName };
     }
     return out;
@@ -88,33 +92,34 @@ export function App() {
     if (!currentGroup) return out;
     const myName = selfMap[currentGroup.id];
     for (const t of currentGroupTrips) {
-      const expenses = (snap.expenses || []).filter((e) => e.trip_id === t.id);
-      const totalSpent = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+      const entries = (snap.expenses || []).filter((e) => e.trip_id === t.id);
+      const totalSpent = entries.filter((e) => !e.is_settlement).reduce((s, e) => s + Number(e.amount || 0), 0);
       let net = 0;
-      if (myName) for (const e of expenses) net += youLine(e, myName) || 0;
+      if (myName) for (const e of entries) net += youLine(e, myName) || 0;
       out[t.id] = { totalSpent, net, hasSelf: !!myName };
     }
     return out;
   }, [snap, currentGroup, currentGroupTrips, selfMap]);
 
   useEffect(() => {
-    if (view.name === 'group' && !currentGroup) { setView({ name: 'groups' }); toast('Group was deleted', 'error'); }
+    if (authState !== 'signed_in') return;
+    if (view.name === 'group' && !currentGroup) { setView({ name: 'groups' }); toast('Group is no longer available', 'error'); }
     else if (view.name === 'trip' && (!currentGroup || !currentTrip)) {
       if (currentGroup) { setView({ name: 'group', groupId: currentGroup.id }); toast('Trip was deleted', 'error'); }
-      else { setView({ name: 'groups' }); toast('Group was deleted', 'error'); }
+      else { setView({ name: 'groups' }); toast('Group is no longer available', 'error'); }
     }
-  }, [view.name, currentGroup, currentTrip, toast]);
+  }, [authState, view.name, currentGroup, currentTrip, toast]);
 
   // ---------- Mutations ----------
-  // Wrap async mutations so any backend error surfaces as a toast (and the
-  // sheet still closes). Without this, a Supabase rejection silently kills
-  // the click and leaves the user thinking nothing happened.
+  // Every backend error surfaces as a toast instead of failing silently.
   const safeMutate = async (label, fn) => {
     try {
       return await fn();
     } catch (e) {
       console.error(label + ' failed:', e);
-      const msg = (e && (e.message || e.error_description || e.hint)) || String(e);
+      const msg = e?.code === '40001'
+        ? 'someone else changed this just now. It has been refreshed; please try again.'
+        : (e && (e.message || e.error_description || e.hint)) || String(e);
       toast(`${label} failed: ${msg}`, 'error');
       throw e;
     }
@@ -125,33 +130,34 @@ export function App() {
       const c = await safeMutate('Create group', () => DB.addGroup(g));
       setSheet(null);
       toast(`"${c.name}" created`, 'success');
+      setView({ name: 'group', groupId: c.id });
     } catch {}
   };
   const addMember = async (name) => {
     try {
-      const m = await safeMutate('Add member', () => DB.addMember(currentGroup.id, name));
+      await safeMutate('Add member', () => DB.addMember(currentGroup.id, name));
       setSheet(null);
       toast(`${name} added`, 'success');
-      if (!currentSelf && currentGroupMembers.length === 0) {
-        persistSelf({ ...selfMap, [currentGroup.id]: m.name });
-      }
     } catch {}
   };
-  const removeMember = (m) => setConfirm({
-    title: `Remove ${m.name}?`,
-    message: `Past expenses with ${m.name} stay in history. They won't appear in new expense forms.`,
-    confirmLabel: 'Remove',
-    onConfirm: async () => {
-      try {
-        await safeMutate('Remove member', () => DB.deleteMember(m.id));
-        if (currentSelf === m.name) {
-          const next = { ...selfMap }; delete next[currentGroup.id]; persistSelf(next);
-        }
-        toast(`${m.name} removed`, 'success');
-        setConfirm(null);
-      } catch { setConfirm(null); }
-    },
-  });
+  const removeMember = (m) => {
+    const isMe = m.name === currentSelf;
+    setConfirm({
+      title: isMe ? 'Leave this group?' : `Remove ${m.name}?`,
+      message: isMe
+        ? 'You will lose access to this group. Your past expenses stay in its history.'
+        : `Past expenses with ${m.name} stay in history. They won't appear in new expense forms.`,
+      confirmLabel: isMe ? 'Leave' : 'Remove',
+      onConfirm: async () => {
+        try {
+          await safeMutate(isMe ? 'Leave group' : 'Remove member', () => DB.deleteMember(m.id));
+          toast(isMe ? 'You left the group' : `${m.name} removed`, 'success');
+          if (isMe) setView({ name: 'groups' });
+          setConfirm(null);
+        } catch { setConfirm(null); }
+      },
+    });
+  };
   const createTrip = async (t) => {
     try {
       const c = await safeMutate('Create trip', () => DB.addTrip(currentGroup.id, t));
@@ -166,7 +172,7 @@ export function App() {
       toast(`Added ${fmtINR(e.amount)} expense`, 'success');
     } catch {}
   };
-  const editExpense = (e) => setSheet({ kind: 'expense', editing: e });
+  const editExpense = (e) => { if (!e.is_settlement) setSheet({ kind: 'expense', editing: e }); };
   const updateExpense = async (id, patch) => {
     try {
       await safeMutate('Update expense', () => DB.updateExpense(id, patch));
@@ -182,14 +188,14 @@ export function App() {
       try {
         await safeMutate('Delete expense', () => DB.deleteExpense(e.id));
         setSheet(null);
-        toast('Expense deleted', 'success');
         setConfirm(null);
+        toast('Expense deleted', 'success');
       } catch { setConfirm(null); }
     },
   });
   const removeTrip = () => setConfirm({
     title: `Delete "${currentTrip.name}"?`,
-    message: `Removes the trip and all ${currentTripExpenses.length} expense${currentTripExpenses.length === 1 ? '' : 's'} inside.`,
+    message: `Removes the trip and all ${currentTripExpenses.filter((e) => !e.is_settlement).length} expenses inside.`,
     confirmLabel: 'Delete trip',
     onConfirm: async () => {
       try {
@@ -202,85 +208,94 @@ export function App() {
   });
   const removeGroup = () => setConfirm({
     title: `Delete "${currentGroup.name}"?`,
-    message: `Removes the group, ${currentGroupMembers.length} member${currentGroupMembers.length === 1 ? '' : 's'}, ${currentGroupTrips.length} trip${currentGroupTrips.length === 1 ? '' : 's'}, and every expense inside.`,
+    message: `Deletes the group for everyone: ${currentGroupMembers.length} members, ${currentGroupTrips.length} trips and every expense inside.`,
     confirmLabel: 'Delete group',
     onConfirm: async () => {
       try {
-        const id = currentGroup.id; const n = currentGroup.name;
-        await safeMutate('Delete group', () => DB.deleteGroup(id));
-        const next = { ...selfMap }; delete next[id]; persistSelf(next);
+        const n = currentGroup.name;
+        await safeMutate('Delete group', () => DB.deleteGroup(currentGroup.id));
         toast(`"${n}" deleted`, 'success');
         setConfirm(null);
       } catch { setConfirm(null); }
     },
   });
-  const resetAll = () => {
-    setSettingsOpen(false);
-    setConfirm({
-      title: 'Reset all data?',
-      message: mode === 'supabase'
-        ? 'Deletes every group, member, trip and expense in your Supabase database. Affects everyone connected. Cannot be undone.'
-        : 'Deletes every group, member, trip and expense from this device. Cannot be undone.',
-      confirmLabel: 'Reset everything',
-      onConfirm: async () => {
-        await DB.resetAll();
-        persistSelf({});
-        setView({ name: 'groups' });
-        toast('All data cleared', 'success');
-        setConfirm(null);
-      },
-    });
-  };
+
   const onPay = (transfer, trip) => setUpiPay({ transfer, trip });
   const saveVpa = (name, vpa) => persistUpi({ ...upiMap, [name]: vpa });
+  const markPaid = (s, trip) => setConfirm({
+    title: `Record ${fmtINR(s.amount, true)} as paid?`,
+    message: `${s.from} paid ${s.to}. This updates everyone's balances. You can undo it from the Settle tab.`,
+    confirmLabel: 'Mark as paid',
+    onConfirm: async () => {
+      try {
+        await safeMutate('Record payment', () => DB.recordSettlement(trip.id, currentGroup.id, s.from, s.to, s.amount, 'upi'));
+        setConfirm(null);
+        toast('Payment recorded', 'success');
+      } catch { setConfirm(null); }
+    },
+  });
+  const undoPayment = (p) => setConfirm({
+    title: 'Undo this payment?',
+    message: `${p.paid_by} → ${p.split_among[0]}, ${fmtINR(p.amount, true)}. Balances go back to before it was recorded.`,
+    confirmLabel: 'Undo payment',
+    onConfirm: async () => {
+      try {
+        await safeMutate('Undo payment', () => DB.deleteExpense(p.id));
+        setConfirm(null);
+        toast('Payment removed', 'success');
+      } catch { setConfirm(null); }
+    },
+  });
   const reactToExpense = async (expenseId, nextReactions) => {
-    try {
-      await safeMutate('React', () => DB.updateExpense(expenseId, { reactions: nextReactions }));
-    } catch {}
+    try { await safeMutate('React', () => DB.updateExpense(expenseId, { reactions: nextReactions })); } catch {}
   };
 
-  const pickSelf = (name) => {
-    if (!currentGroup) return;
-    const next = { ...selfMap };
-    if (name) next[currentGroup.id] = name; else delete next[currentGroup.id];
-    persistSelf(next);
-    toast(name ? `You're set as ${name}` : 'Self cleared', 'success');
+  const finishJoin = (groupId, already) => {
+    try { sessionStorage.removeItem(JOIN_KEY); } catch {}
+    setJoinToken(null);
+    setView({ name: 'group', groupId });
+    toast(already ? "You're already in this group" : 'Welcome to the group!', 'success');
+  };
+  const cancelJoin = () => {
+    try { sessionStorage.removeItem(JOIN_KEY); } catch {}
+    setJoinToken(null);
   };
 
-  const connectSupabase = async (url, key) => {
-    try {
-      await DB.connectSupabase(url, key);
-      toast('Connected to Supabase', 'success');
-    } catch (e) {
-      toast('Connection failed: ' + (e.message || e), 'error');
-    }
-  };
-  const disconnectSupabase = async () => {
-    await DB.disconnect();
-    toast('Disconnected — using local storage', 'success');
-  };
-  const forgetPasscode = async () => {
-    setSettingsOpen(false);
-    setView({ name: 'groups' });
-    await DB.forgetPasscode();
-    toast('Passcode removed from this device', 'success');
-  };
-
-  if (mode === 'supabase' && access === 'needs_passcode') {
+  // ---------- Signed out / loading / joining ----------
+  if (authState === 'loading') {
     return (
       <div className="app">
         <Header title="SplitPro" subtitle="Split bills in ₹" />
-        <PasscodeGate onUseLocal={disconnectSupabase} />
+        <main className="app-content"><div className="empty"><p>Loading…</p></div></main>
+      </div>
+    );
+  }
+  if (authState === 'signed_out') {
+    return (
+      <div className="app">
+        <Header title="SplitPro" subtitle={DB.isStaging() ? 'Staging' : 'Split bills in ₹'} />
+        <SignInScreen joining={!!joinToken} />
+        <ToastStack toasts={toasts} />
+      </div>
+    );
+  }
+  if (joinToken) {
+    return (
+      <div className="app">
+        <Header title="SplitPro" subtitle="Join a group" />
+        <JoinScreen token={joinToken} onJoined={finishJoin} onCancel={cancelJoin} />
         <ToastStack toasts={toasts} />
       </div>
     );
   }
 
   let headerProps;
-  const baseHeader = { onCalc: () => setCalcOpen(true), onSettings: () => setSettingsOpen(true), syncStatus: mode === 'supabase' ? 'live' : null };
-  if (view.name === 'groups')      headerProps = { ...baseHeader, title: 'SplitPro', subtitle: 'Split bills in ₹' };
+  const baseHeader = { onCalc: () => setCalcOpen(true), onSettings: () => setSettingsOpen(true), syncStatus: DB.getLoadError() ? null : 'live' };
+  if (view.name === 'groups')      headerProps = { ...baseHeader, title: 'SplitPro', subtitle: DB.isStaging() ? 'Staging' : 'Split bills in ₹' };
   else if (view.name === 'group')  headerProps = { ...baseHeader, title: currentGroup?.name || 'Group', subtitle: null, onBack: () => setView({ name: 'groups' }) };
   else                              headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: currentGroup?.name, onBack: () => setView({ name: 'group', groupId: currentGroup.id }) };
+
+  const myMember = currentGroupMembers.find((m) => m.name === currentSelf);
 
   return (
     <div className="app">
@@ -306,7 +321,7 @@ export function App() {
             onRemoveMember={removeMember}
             onAddTrip={() => setSheet({ kind: 'trip' })}
             onDeleteGroup={removeGroup}
-            onChangeSelf={() => setSelfPickerOpen(true)}
+            onChangeSelf={() => setInviteOpen(true)}
             onOpenActions={() => setActionsOpen('group')}
           />
         )}
@@ -324,6 +339,8 @@ export function App() {
             onEditExpense={editExpense}
             onDeleteTrip={removeTrip}
             onPay={onPay}
+            onMarkPaid={markPaid}
+            onUndoPayment={undoPayment}
             onOpenActions={() => setActionsOpen('trip')}
             onReact={reactToExpense}
           />
@@ -343,15 +360,16 @@ export function App() {
         self={currentSelf}
         editing={sheet?.kind === 'expense' ? sheet.editing : null}
       />
-      <SelfPickerSheet open={selfPickerOpen} onClose={() => setSelfPickerOpen(false)} members={currentGroupMembers} current={currentSelf} onPick={pickSelf} />
       <CalculatorSheet open={calcOpen} onClose={() => setCalcOpen(false)} />
+      <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} group={currentGroup} toast={toast} />
       <ActionsSheet
         open={actionsOpen === 'group'}
         onClose={() => setActionsOpen(null)}
         title={currentGroup ? `${currentGroup.emoji} ${currentGroup.name}` : 'Group actions'}
         actions={[
-          { label: 'Change who I am', icon: <Icon.More />, onClick: () => { setActionsOpen(null); setSelfPickerOpen(true); } },
-          { label: 'Delete group', icon: <Icon.Trash />, danger: true, onClick: () => { setActionsOpen(null); removeGroup(); } },
+          { label: 'Invite people', icon: <Icon.More />, onClick: () => { setActionsOpen(null); setInviteOpen(true); } },
+          ...(myMember && myRole !== 'owner' ? [{ label: 'Leave group', icon: <Icon.Trash />, danger: true, onClick: () => { setActionsOpen(null); removeMember(myMember); } }] : []),
+          ...(myRole === 'owner' ? [{ label: 'Delete group', icon: <Icon.Trash />, danger: true, onClick: () => { setActionsOpen(null); removeGroup(); } }] : []),
         ]}
       />
       <ActionsSheet
@@ -367,28 +385,11 @@ export function App() {
         onClose={() => setUpiPay(null)}
         transfer={upiPay?.transfer}
         tripName={upiPay?.trip?.name}
-        knownVpa={upiPay ? upiMap[upiPay.transfer.to] : ''}
+        knownVpa={upiPay ? (DB.getUpiIds(currentGroup?.id || '')[upiPay.transfer.to] || upiMap[upiPay.transfer.to] || '') : ''}
         onSaveVpa={saveVpa}
         toast={toast}
       />
-      <SettingsSheet
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        mode={mode}
-        supaConfig={supaConfig}
-        onOpenSupabase={() => { setSettingsOpen(false); setSupabaseOpen(true); }}
-        onResetAll={resetAll}
-        onForgetPasscode={forgetPasscode}
-      />
-      <SupabaseSetupSheet
-        open={supabaseOpen}
-        onClose={() => setSupabaseOpen(false)}
-        onConnect={connectSupabase}
-        onDisconnect={disconnectSupabase}
-        config={supaConfig}
-        mode={mode}
-        toast={toast}
-      />
+      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} toast={toast} />
       <ConfirmSheet open={!!confirm} onClose={() => setConfirm(null)} onConfirm={confirm?.onConfirm} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} />
       <ToastStack toasts={toasts} />
     </div>
