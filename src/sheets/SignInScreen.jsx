@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { DB } from '../db/db';
 import { IS_TOUCH } from '../lib/env';
 
+/**
+ * Whether sign-in emails contain a typeable code. Supabase's default emails
+ * only have a link; the code-and-link template (supabase/templates/signin.html)
+ * needs a custom email provider (SMTP). Flip to true once that is configured.
+ */
+const EMAIL_HAS_CODE = false;
+
 const errMsg = (e) => (e && (e.message || e.error_description)) || String(e);
 
 /** Shown when nobody is signed in. Email link/code and Google. */
@@ -57,16 +64,23 @@ export function SignInScreen({ joining }) {
         ) : (
           <form onSubmit={(e) => { e.preventDefault(); run(() => DB.verifyEmailCode(sentTo, code)); }} style={{ textAlign: 'left' }}>
             <p style={{ color: 'var(--text-soft)', fontSize: 14 }}>
-              We sent a link to <strong>{sentTo}</strong>. Tap it on this device, or type the code from the email:
+              We sent a sign-in link to <strong>{sentTo}</strong>.{' '}
+              {EMAIL_HAS_CODE
+                ? 'Tap it on this device, or type the code from the email:'
+                : "Open it on this device, in this browser, to finish signing in. Check spam if it isn't there within a minute."}
             </p>
-            <div className="field">
-              <label className="field-label" htmlFor="sp-code">Code</label>
-              <input id="sp-code" inputMode="numeric" autoComplete="one-time-code" maxLength={10}
-                value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); setError(''); }} />
-            </div>
-            <button type="submit" className="btn btn-primary btn-full" disabled={code.length < 6 || busy}>
-              {busy ? 'Checking…' : 'Sign in'}
-            </button>
+            {EMAIL_HAS_CODE && (
+              <React.Fragment>
+                <div className="field">
+                  <label className="field-label" htmlFor="sp-code">Code</label>
+                  <input id="sp-code" inputMode="numeric" autoComplete="one-time-code" maxLength={10}
+                    value={code} onChange={(e) => { setCode(e.target.value.replace(/\D/g, '')); setError(''); }} />
+                </div>
+                <button type="submit" className="btn btn-primary btn-full" disabled={code.length < 6 || busy}>
+                  {busy ? 'Checking…' : 'Sign in'}
+                </button>
+              </React.Fragment>
+            )}
             <button type="button" className="btn btn-ghost btn-full" style={{ marginTop: 8 }}
               onClick={() => { setSentTo(null); setCode(''); setError(''); }}>Use a different email</button>
           </form>

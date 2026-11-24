@@ -288,18 +288,21 @@
       //   "sender_name": "Admin"
       // },
 
-      // SplitPro: sign-in emails carry both a link and the code, because the
-      // app lets people type the code (handy when the link opens another browser).
-      "template": {
-        "confirmation": {
-          "subject": "Your SplitPro sign-in code: {{ .Token }}",
-          "content_path": "./supabase/templates/signin.html"
-        },
-        "magic_link": {
-          "subject": "Your SplitPro sign-in code: {{ .Token }}",
-          "content_path": "./supabase/templates/signin.html"
-        }
-      },
+      // SplitPro sign-in email with code + link (supabase/templates/signin.html).
+      // BLOCKED until custom SMTP (Resend) is configured: Supabase does not allow
+      // template changes on the free plan with its default email provider.
+      // When SMTP is set up: uncomment, push, and set EMAIL_HAS_CODE = true in
+      // src/sheets/SignInScreen.jsx.
+      // "template": {
+      //   "confirmation": {
+      //     "subject": "Your SplitPro sign-in code: {{ .Token }}",
+      //     "content_path": "./supabase/templates/signin.html"
+      //   },
+      //   "magic_link": {
+      //     "subject": "Your SplitPro sign-in code: {{ .Token }}",
+      //     "content_path": "./supabase/templates/signin.html"
+      //   }
+      // },
 
       // Uncomment to customize notification email template
       // "notification": {
