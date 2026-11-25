@@ -51,6 +51,29 @@ begin
   insert into storage.objects (bucket_id, name) values ('receipts', g::text || '/smoke.jpg');
   insert into smoke (check_name, ok, detail) values ('member can upload a receipt to own group folder', true, g::text || '/smoke.jpg');
 
+  -- Milestone 0: plan and categories
+  insert into smoke (check_name, ok, detail)
+  select 'new account is on a 30-day Premium trial', p.plan = 'trial' and p.days_left = 30, p.plan || ' ' || p.days_left from public.my_plan() p;
+  perform public.create_expense(jsonb_build_object('group_id', g, 'description', 'Veg', 'amount_minor', 100, 'category', 'groceries',
+        'payers', jsonb_build_array(jsonb_build_object('member_id', a, 'amount_minor', 100)),
+        'splits', jsonb_build_array(jsonb_build_object('member_id', a, 'amount_minor', 100))));
+  insert into smoke (check_name, ok, detail) values ('new built-in category accepted', true, 'groceries');
+  begin
+    perform public.create_expense(jsonb_build_object('group_id', g, 'description', 'Bad cat', 'amount_minor', 100, 'category', 'nope',
+        'payers', jsonb_build_array(jsonb_build_object('member_id', a, 'amount_minor', 100)),
+        'splits', jsonb_build_array(jsonb_build_object('member_id', a, 'amount_minor', 100))));
+    insert into smoke (check_name, ok, detail) values ('unknown category rejected', false, 'was accepted!');
+  exception when others then
+    insert into smoke (check_name, ok, detail) values ('unknown category rejected', sqlstate = '22023', sqlerrm);
+  end;
+  insert into smoke (check_name, ok, detail) values ('custom category (Premium) works during trial', public.create_category(g, 'Scuba', '🤿') like 'c_%', 'created');
+  begin
+    update public.entitlements set premium_until = now() + interval '10 years';
+    insert into smoke (check_name, ok, detail) values ('users cannot grant themselves Premium', false, 'was allowed!');
+  exception when others then
+    insert into smoke (check_name, ok, detail) values ('users cannot grant themselves Premium', sqlstate = '42501', sqlerrm);
+  end;
+
   tok := public.create_invite(g);
   insert into smoke (check_name, ok, detail) values ('invite token created', length(tok) >= 20, length(tok)::text || ' chars');
   perform set_config('smoke.group', g::text, true);
@@ -87,7 +110,7 @@ begin
     p.group_name = 'Smoke Test' and p.placeholders @> '[{"display_name":"Bilal"}]', p.group_name || ' ' || p.placeholders::text);
   perform public.accept_invite(current_setting('smoke.token'), (p.placeholders -> 0 ->> 'id')::uuid);
   select count(*) into n from public.expenses;
-  insert into smoke (check_name, ok, detail) values ('after claiming via invite, sees the expense', n = 1, n::text);
+  insert into smoke (check_name, ok, detail) values ('after claiming via invite, sees the group''s expenses', n = 2, n::text);
 end $$;
 
 -- ---------- Signed out ----------
