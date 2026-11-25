@@ -50,10 +50,17 @@ describe('app shell screens render from real-shaped data', () => {
   });
 
   it('Analytics shows my share (₹100 of a ₹300 bill), not the bill', () => {
-    const html = renderToString(h(AnalyticsView, { expenses, selfMap }));
-    expect(html).toContain('₹100');
-    expect(html).toContain('₹200'); // paid for others
-    expect(html).toContain('Food');
+    const props = { expenses, selfMap, groups, trips, groupSummaries, toast: noop, onOpenPlan: noop };
+    const free = renderToString(h(AnalyticsView as never, { ...props, premium: false }));
+    expect(free).toContain('₹100');
+    expect(free).toContain('₹200'); // paid for others
+    expect(free).toContain('This is a Premium feature');
+    expect(free).not.toContain('Last 7 days'); // free plan: this month / all time only
+    const paid = renderToString(h(AnalyticsView as never, { ...props, premium: true }));
+    expect(paid).toContain('Last 7 days');
+    expect(paid).toContain('Download CSV');
+    expect(paid).toContain('Owed to you');
+    expect(paid).not.toContain('This is a Premium feature');
   });
 
   it('Trips lists trips with spending that excludes settlements', () => {

@@ -36,6 +36,9 @@ export function SignInScreen({ joining }) {
         <p>Split trips and shared bills with friends. Your groups sync across all your devices.</p>
         {error && <p role="alert" style={{ color: 'var(--negative)', background: 'rgba(255,77,109,.08)', border: '1px solid rgba(255,77,109,.3)', borderRadius: 12, padding: '10px 12px', textAlign: 'left', fontSize: 14 }}>{error}</p>}
 
+        {/* Test builds (previews, local dev) use the staging database, which has
+            no Google sign-in and can't email the public: offer only the test user. */}
+        {!DB.isStaging() && (<React.Fragment>
         <button type="button" className="btn btn-full" disabled={busy}
           onClick={() => run(() => DB.signInWithGoogle())}
           style={{ marginTop: 20, background: '#fff', color: '#1F1F1F', fontWeight: 700 }}>
@@ -88,6 +91,7 @@ export function SignInScreen({ joining }) {
               onClick={() => { setSentTo(null); setCode(''); setError(''); }}>Use a different email</button>
           </form>
         )}
+        </React.Fragment>)}
 
         <p style={{ color: 'var(--text-mute)', fontSize: 12, marginTop: 20 }}>
           By continuing you agree to how we handle your data, as described in our{' '}
@@ -95,14 +99,18 @@ export function SignInScreen({ joining }) {
         </p>
 
         {DB.isStaging() && (
-          <div style={{ marginTop: 28, textAlign: 'left', borderTop: '1px dashed var(--border-2)', paddingTop: 12 }}>
-            <p className="section-title" style={{ margin: '0 0 8px' }}>Staging only</p>
+          <div style={{ marginTop: 20, textAlign: 'left', border: '1px dashed var(--border-2)', borderRadius: 14, padding: 14 }}>
+            <p className="section-title" style={{ margin: '0 0 6px' }}>Test version</p>
+            <p style={{ color: 'var(--text-soft)', fontSize: 13, margin: '0 0 10px' }}>
+              This is a preview with test data, separate from the real app. Your real groups are at supersplit.netlify.app.
+              Pick any name to try it; nothing here affects real data.
+            </p>
             <form onSubmit={(e) => { e.preventDefault(); run(() => DB.signInAsTestUser(testName.trim() || 'Test user')); }}>
               <div className="field">
                 <label className="field-label" htmlFor="sp-test-name">Test user name</label>
                 <input id="sp-test-name" value={testName} maxLength={60} onChange={(e) => setTestName(e.target.value)} />
               </div>
-              <button type="submit" className="btn btn-soft btn-full" disabled={busy}>Continue as a throwaway test user</button>
+              <button type="submit" className="btn btn-primary btn-full" disabled={busy}>Continue as a test user</button>
             </form>
           </div>
         )}
