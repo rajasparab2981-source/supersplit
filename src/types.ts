@@ -22,6 +22,20 @@ export interface Trip {
   name: string;
   emoji: string;
   created_at: string;
+  // Smart Trip Planner details (absent on databases without the planner migration).
+  destination?: string | null;
+  start_location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  adults?: number | null;
+  children?: number | null;
+  travel_type?: string | null;
+  travel_style?: string | null;
+  status?: 'planning' | 'active' | 'completed';
+  budget_minor?: number | null;
+  buffer_pct?: number | null;
+  alert_thresholds?: number[] | null;
+  prefs?: Record<string, unknown> | null;
 }
 
 /** { memberName: rupees } for unequal splits; null/empty means equal split. */

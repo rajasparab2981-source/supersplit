@@ -16,6 +16,7 @@ import { builtinConfig } from '../config';
 import { splitEvenly, toPaise, toRupees } from '../lib/money';
 import { setCategories } from '../lib/constants';
 import { todayISO } from '../lib/dates';
+import type { BudgetItem } from '../lib/tripPlan';
 import type { Expense, Group, Member, Reactions, Shares, Trip } from '../types';
 
 export const supabase = createClient(builtinConfig.supabaseUrl, builtinConfig.supabaseKey, {
@@ -122,7 +123,7 @@ async function refreshAll(): Promise<void> {
   const [groups, members, trips, expenses, settlements, profiles] = await Promise.all([
     supabase.from('groups').select('id, name, emoji, color, created_at'),
     supabase.from('group_members').select('id, group_id, user_id, display_name, role, created_at, left_at'),
-    supabase.from('trips').select('id, group_id, name, emoji, created_at').is('deleted_at', null),
+    supabase.from('trips').select('*').is('deleted_at', null),
     supabase.from('expenses')
       .select('id, group_id, trip_id, description, amount_minor, currency, category, expense_date, split_mode, receipt_path, created_at, version, expense_payers(member_id, amount_minor), expense_splits(member_id, amount_minor), expense_reactions(member_id, emoji)')
       .is('deleted_at', null),
@@ -149,6 +150,7 @@ async function refreshAll(): Promise<void> {
 /** Plan as reported by the database: 'premium' (paid), 'trial' or 'free'. */
 export interface PlanInfo { plan: 'premium' | 'trial' | 'free'; trial_ends_at: string; premium_until: string | null; days_left: number }
 let planInfo: PlanInfo | null = null;
+let budgetItems: BudgetItem[] = [];
 
 /**
  * Categories and plan. Tolerant on purpose: if the database doesn't have them
@@ -156,10 +158,14 @@ let planInfo: PlanInfo | null = null;
  * categories and shows no plan, instead of failing to load.
  */
 async function loadExtras(): Promise<void> {
-  const [cats, plan] = await Promise.all([
+  const [cats, plan, items] = await Promise.all([
     supabase.from('categories').select('id, group_id, name, emoji, archived_at').order('sort_order'),
     supabase.rpc('my_plan'),
+    supabase.from('trip_budget_items').select('*').is('deleted_at', null).order('created_at'),
   ]);
+  budgetItems = !items.error && items.data
+    ? (items.data as BudgetItem[]).map((i) => ({ ...i, quantity: Number(i.quantity), unit_price_minor: Number(i.unit_price_minor), estimated_minor: Number(i.estimated_minor) }))
+    : [];
   if (!cats.error && cats.data) setCategories(cats.data);
   planInfo = !plan.error && Array.isArray(plan.data) ? ((plan.data[0] as PlanInfo | undefined) ?? null) : null;
 }
@@ -185,7 +191,7 @@ function startSync(): void {
   stopSync();
   // RLS applies to Realtime too: each user only receives changes for their groups.
   channel = supabase.channel('splitpro-v2');
-  for (const table of ['groups', 'group_members', 'trips', 'expenses', 'expense_reactions', 'settlements']) {
+  for (const table of ['groups', 'group_members', 'trips', 'expenses', 'expense_reactions', 'settlements', 'trip_budget_items']) {
     channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => queueRefresh());
   }
   channel.subscribe();
@@ -403,6 +409,33 @@ export const DB = {
     return { id, group_id: groupId, name: name.trim(), emoji: emoji ?? '🏖️', created_at: new Date().toISOString() } as Trip;
   },
   deleteTrip: (id: string) => rpc('delete_trip', { p_trip_id: id }),
+
+  // ----- Smart Trip Planner (Premium; checked by the database) -----
+  getBudgetItems: (tripId: string): BudgetItem[] => budgetItems.filter((i) => i.trip_id === tripId),
+  /** Change planning details; only the keys given are changed. */
+  async updateTripPlan(tripId: string, patch: Record<string, unknown>): Promise<void> {
+    await rpc('update_trip_plan', { p: { trip_id: tripId, ...patch } });
+    await refreshAll();
+  },
+  /** Create a trip in a group and set its planning details. Returns the trip id. */
+  async planTrip(groupId: string, name: string, emoji: string | undefined, details: Record<string, unknown>): Promise<string> {
+    const id = crypto.randomUUID();
+    await rpc('create_trip', { p_group_id: groupId, p_name: name, p_emoji: emoji ?? null, p_id: id });
+    await rpc('update_trip_plan', { p: { trip_id: id, status: 'planning', ...details } });
+    await refreshAll();
+    return id;
+  },
+  /** Add or update a budget line (the id makes retries safe). */
+  async saveBudgetItem(item: Record<string, unknown> & { trip_id: string }): Promise<string> {
+    const id = (item.id as string | undefined) ?? crypto.randomUUID();
+    await rpc('save_budget_item', { p: { ...item, id } });
+    await refreshAll();
+    return id;
+  },
+  async deleteBudgetItem(id: string): Promise<void> {
+    await rpc('delete_budget_item', { p_id: id });
+    await refreshAll();
+  },
 
   // ----- Expenses -----
   async addExpense(p: ExpensePayload & { trip_id: string; image_url?: string | null }): Promise<{ id: string }> {
