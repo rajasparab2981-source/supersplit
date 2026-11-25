@@ -14,6 +14,7 @@
 import { createClient, type RealtimeChannel, type Session } from '@supabase/supabase-js';
 import { builtinConfig } from '../config';
 import { splitEvenly, toPaise, toRupees } from '../lib/money';
+import { setCategories } from '../lib/constants';
 import { todayISO } from '../lib/dates';
 import type { Expense, Group, Member, Reactions, Shares, Trip } from '../types';
 
@@ -140,8 +141,27 @@ async function refreshAll(): Promise<void> {
     profiles: (profiles.data ?? []) as Profile[],
   };
   profile = raw.profiles.find((p) => p.id === myUserId()) ?? profile;
+  await loadExtras();
   rebuild();
   void signReceipts();
+}
+
+/** Plan as reported by the database: 'premium' (paid), 'trial' or 'free'. */
+export interface PlanInfo { plan: 'premium' | 'trial' | 'free'; trial_ends_at: string; premium_until: string | null; days_left: number }
+let planInfo: PlanInfo | null = null;
+
+/**
+ * Categories and plan. Tolerant on purpose: if the database doesn't have them
+ * yet (app deployed before the migration), the app keeps its built-in
+ * categories and shows no plan, instead of failing to load.
+ */
+async function loadExtras(): Promise<void> {
+  const [cats, plan] = await Promise.all([
+    supabase.from('categories').select('id, group_id, name, emoji, archived_at').order('sort_order'),
+    supabase.rpc('my_plan'),
+  ]);
+  if (!cats.error && cats.data) setCategories(cats.data);
+  planInfo = !plan.error && Array.isArray(plan.data) ? ((plan.data[0] as PlanInfo | undefined) ?? null) : null;
 }
 
 /** Coalesce bursts of realtime events into one reload. */
@@ -294,6 +314,10 @@ export const DB = {
   getUser: () => session?.user ?? null,
   getProfile: (): Profile | null => profile,
   getLoadError: () => loadError,
+  /** null until loaded, or when the database has no plans yet. */
+  getPlan: (): PlanInfo | null => planInfo,
+  /** Premium features are on during the trial and any paid period. */
+  isPremium: (): boolean => planInfo?.plan === 'premium' || planInfo?.plan === 'trial',
   isStaging: () => import.meta.env.VITE_APP_ENV === 'staging',
 
   // ----- Auth -----

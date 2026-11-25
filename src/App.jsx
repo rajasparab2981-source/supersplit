@@ -7,12 +7,16 @@ import { AddExpenseSheet } from './sheets/AddExpenseSheet';
 import { CalculatorSheet } from './sheets/CalculatorSheet';
 import { InviteSheet } from './sheets/InviteSheet';
 import { JoinScreen } from './sheets/JoinScreen';
-import { SettingsSheet } from './sheets/SettingsSheet';
 import { SignInScreen } from './sheets/SignInScreen';
 import { AddGroupSheet, AddMemberSheet, AddTripSheet } from './sheets/SimpleSheets';
 import { UpiPaySheet } from './sheets/UpiPaySheet';
 import { Icon } from './ui/Icon';
+import { BottomNav } from './ui/BottomNav';
 import { ActionsSheet, ConfirmSheet, Header, ToastStack, useToasts } from './ui/primitives';
+import { AnalyticsView } from './views/AnalyticsView';
+import { HomeView } from './views/HomeView';
+import { ProfileView } from './views/ProfileView';
+import { TripsView } from './views/TripsView';
 import { GroupView } from './views/GroupView';
 import { GroupsView } from './views/GroupsView';
 import { TripView } from './views/TripView';
@@ -47,13 +51,13 @@ export function App() {
   const [upiMap, setUpiMap] = useState(loadUpiMap());
   const persistUpi = useCallback((m) => { saveUpiMap(m); setUpiMap(m); }, []);
 
-  const [view, setView] = useState({ name: 'groups' });
+  // Top-level tabs: home | groups | trips | analytics | profile. Inside Groups: group, trip.
+  const [view, setView] = useState({ name: 'home' });
   const [sheet, setSheet] = useState(null);
   const [upiPay, setUpiPay] = useState(null); // { transfer, trip }
   const [calcOpen, setCalcOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(null); // 'group' | 'trip' | null
   const [confirm, setConfirm] = useState(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const { toasts, push: toast } = useToasts();
 
@@ -100,6 +104,19 @@ export function App() {
     }
     return out;
   }, [snap, currentGroup, currentGroupTrips, selfMap]);
+
+  const allTripTotals = useMemo(() => {
+    const out = {};
+    for (const t of (snap.trips || [])) {
+      const myName = selfMap[t.group_id];
+      const entries = (snap.expenses || []).filter((e) => e.trip_id === t.id);
+      const spending = entries.filter((e) => !e.is_settlement);
+      let net = 0;
+      if (myName) for (const e of entries) net += youLine(e, myName) || 0;
+      out[t.id] = { totalSpent: spending.reduce((s, e) => s + Number(e.amount || 0), 0), net, hasSelf: !!myName, count: spending.length };
+    }
+    return out;
+  }, [snap, selfMap]);
 
   useEffect(() => {
     if (authState !== 'signed_in') return;
@@ -290,10 +307,14 @@ export function App() {
   }
 
   let headerProps;
-  const baseHeader = { onCalc: () => setCalcOpen(true), onSettings: () => setSettingsOpen(true), syncStatus: DB.getLoadError() ? null : 'live' };
-  if (view.name === 'groups')      headerProps = { ...baseHeader, title: 'SplitPro', subtitle: DB.isStaging() ? 'Staging' : 'Split bills in ₹' };
+  const baseHeader = { onCalc: () => setCalcOpen(true), syncStatus: DB.getLoadError() ? null : 'live' };
+  const TAB_TITLES = { home: 'SplitPro', groups: 'Groups', trips: 'Trips', analytics: 'Analytics', profile: 'Profile' };
+  const plan = DB.getPlan();
+  const activeTab = TAB_TITLES[view.name] ? view.name : (view.from || 'groups');
+  const openTrip = (groupId, tripId, from) => setView({ name: 'trip', groupId, tripId, from });
+  if (TAB_TITLES[view.name])       headerProps = { ...baseHeader, title: TAB_TITLES[view.name], subtitle: view.name === 'home' ? (DB.isStaging() ? 'Staging' : 'Split bills in ₹') : null };
   else if (view.name === 'group')  headerProps = { ...baseHeader, title: currentGroup?.name || 'Group', subtitle: null, onBack: () => setView({ name: 'groups' }) };
-  else                              headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: currentGroup?.name, onBack: () => setView({ name: 'group', groupId: currentGroup.id }) };
+  else                              headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: currentGroup?.name, onBack: () => setView(view.from && view.from !== 'groups' ? { name: view.from } : { name: 'group', groupId: currentGroup.id }) };
 
   const myMember = currentGroupMembers.find((m) => m.name === currentSelf);
 
@@ -301,6 +322,27 @@ export function App() {
     <div className="app">
       <Header {...headerProps} />
       <main className="app-content">
+        {view.name === 'home' && (
+          <HomeView
+            name={DB.getProfile()?.display_name}
+            groups={groups}
+            trips={snap.trips || []}
+            expenses={snap.expenses || []}
+            groupSummaries={groupSummaries}
+            selfMap={selfMap}
+            plan={plan}
+            onOpenGroup={(id) => setView({ name: 'group', groupId: id })}
+            onOpenTrip={(gid, tid) => openTrip(gid, tid, 'home')}
+            onAddGroup={() => setSheet({ kind: 'group' })}
+            onOpenPlan={() => setView({ name: 'profile' })}
+          />
+        )}
+        {view.name === 'trips' && (
+          <TripsView groups={groups} trips={snap.trips || []} tripTotals={allTripTotals}
+            onOpenTrip={(gid, tid) => openTrip(gid, tid, 'trips')} onGoGroups={() => setView({ name: 'groups' })} />
+        )}
+        {view.name === 'analytics' && <AnalyticsView expenses={snap.expenses || []} selfMap={selfMap} />}
+        {view.name === 'profile' && <ProfileView plan={plan} toast={toast} />}
         {view.name === 'groups' && (
           <GroupsView
             groups={groups}
@@ -389,9 +431,9 @@ export function App() {
         onSaveVpa={saveVpa}
         toast={toast}
       />
-      <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} toast={toast} />
       <ConfirmSheet open={!!confirm} onClose={() => setConfirm(null)} onConfirm={confirm?.onConfirm} title={confirm?.title || ''} message={confirm?.message || ''} confirmLabel={confirm?.confirmLabel} />
       <ToastStack toasts={toasts} />
+      <BottomNav active={activeTab} onChange={(tab) => { setView({ name: tab }); window.scrollTo(0, 0); }} />
     </div>
   );
 }

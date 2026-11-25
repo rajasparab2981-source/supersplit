@@ -6,8 +6,8 @@
 // never write to live data. Keys here are publishable (public by design);
 // Row Level Security decides what each signed-in user can do.
 
-const STAGING_URL = 'https://ajcepfpmasykfrdfhtzq.supabase.co';
-const STAGING_KEY = 'sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP';
+const STAGING_URL = 'https://zsvahcukfzilsvxdsilv.supabase.co';
+const STAGING_KEY = 'sb_publishable_pc3aA6mjXwZDucQzYyaZ9g_CV3Xs1E4';
 
 export const builtinConfig = {
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL ?? STAGING_URL,

@@ -1,5 +1,10 @@
-export interface Category { id: string; label: string; emoji: string }
+export interface Category { id: string; label: string; emoji: string; group_id?: string | null }
 
+/**
+ * Categories offered in the app. Starts as the original eight (the fallback
+ * when the database has no categories table yet) and is replaced with the
+ * database's list once loaded: see setCategories().
+ */
 export const CATEGORIES: Category[] = [
   { id: 'food', label: 'Food', emoji: '🍔' },
   { id: 'travel', label: 'Travel', emoji: '✈️' },
@@ -11,6 +16,23 @@ export const CATEGORIES: Category[] = [
   { id: 'other', label: 'Other', emoji: '📌' },
 ];
 export const CAT_BY_ID: Record<string, Category> = Object.fromEntries(CATEGORIES.map((c) => [c.id, c]));
+
+/**
+ * Replace the category list with the one from the database. Both exports are
+ * updated in place, so existing imports see the new list on the next render.
+ * Archived categories stay resolvable (old expenses) but are not offered.
+ */
+export function setCategories(rows: { id: string; name: string; emoji: string; group_id: string | null; archived_at: string | null }[]): void {
+  if (rows.length === 0) return;
+  for (const k of Object.keys(CAT_BY_ID)) delete CAT_BY_ID[k];
+  const offered: Category[] = [];
+  for (const r of rows) {
+    const c: Category = { id: r.id, label: r.name, emoji: r.emoji, group_id: r.group_id };
+    CAT_BY_ID[r.id] = c;
+    if (!r.archived_at) offered.push(c);
+  }
+  CATEGORIES.splice(0, CATEGORIES.length, ...offered);
+}
 
 export const GROUP_EMOJIS = ['👥', '🏖️', '🏠', '🎓', '💼', '❤️', '🍕', '🎬', '🚗', '⚽', '✈️', '🏔️', '🎵', '☕', '🍻', '🌴'];
 export const TRIP_EMOJIS = ['🏖️', '✈️', '🏔️', '🚗', '🏠', '🎉', '🍽️', '💼', '🌴', '🎬', '🛍️', '⛺', '🏛️', '🎢', '🚂', '⛵'];

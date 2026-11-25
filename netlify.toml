@@ -51,23 +51,19 @@
 # ------------------------------------------------------------
 # Which Supabase project each build talks to (public values only).
 #
-# Decision (2026-11-24): the Mumbai project (ajcepfpmasykfrdfhtzq, created
-# as "splitpro-staging") becomes PRODUCTION at go-live; the Tokyo v1 project
-# is kept as the rollback, then paused. See supabase/SWITCHOVER.md.
+#   production          -> "splitpro"          (ajcepfpmasykfrdfhtzq, Mumbai): real data
+#   previews / branches -> "splitpro-staging2" (zsvahcukfzilsvxdsilv, Mumbai): test data
 #
-# Until a new staging project exists, previews and branch builds also use
-# the Mumbai project. After go-live that is real data: try previews by
-# reading, not by adding test expenses. When the new staging project is
-# created, point the two preview contexts at it.
+# The old Tokyo v1 project (uardivkwulfjwgmwmsqn) is paused.
 # ------------------------------------------------------------
 [context.deploy-preview.environment]
-  VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
+  VITE_SUPABASE_URL = "https://zsvahcukfzilsvxdsilv.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_pc3aA6mjXwZDucQzYyaZ9g_CV3Xs1E4"
   VITE_APP_ENV = "staging"
 
 [context.branch-deploy.environment]
-  VITE_SUPABASE_URL = "https://ajcepfpmasykfrdfhtzq.supabase.co"
-  VITE_SUPABASE_ANON_KEY = "sb_publishable_HV6NY5NhpxDr-2KDUiypFQ_J8VOwkBP"
+  VITE_SUPABASE_URL = "https://zsvahcukfzilsvxdsilv.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "sb_publishable_pc3aA6mjXwZDucQzYyaZ9g_CV3Xs1E4"
   VITE_APP_ENV = "staging"
 
 # Production build: no staging labels or test sign-in.

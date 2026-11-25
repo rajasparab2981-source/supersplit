@@ -74,20 +74,32 @@ are rewritten for the new data model in Phase 2–4.
 the access rules, money rules, invites and import, including your real backup
 when `backups/` is present locally.
 
-### Staging project
+### Projects
 
-`splitpro-staging` (Mumbai) is a separate free Supabase project for trying
-migrations before production. The CLI is linked to it (`supabase/.temp`, not
-committed).
+| Project | Ref | Used by |
+|---|---|---|
+| **splitpro** (production, Mumbai) | `ajcepfpmasykfrdfhtzq` | supersplit.netlify.app; the CLI is linked to it |
+| **splitpro-staging2** (test data, Mumbai) | `zsvahcukfzilsvxdsilv` | deploy previews, branch builds, `npm run dev` |
+| old Tokyo v1 project | `uardivkwulfjwgmwmsqn` | paused |
+
+Every database change goes to staging first:
 
 ```bash
-npx supabase db push --remote --dry-run          # what would change
-npx supabase db push --remote                    # apply new migrations to staging
-npx supabase db advisors --remote                # Supabase security/performance checks
-npx supabase db query --remote -f supabase/tests/staging-smoke.sql   # live checks, rolled back
+S=zsvahcukfzilsvxdsilv
+npx supabase db push --remote=$S --dry-run      # what would change on staging
+npx supabase db push --remote=$S                # apply to staging
+npx supabase db query --remote=$S -f supabase/tests/staging-smoke.sql   # live checks, rolled back
+npx supabase db advisors --remote=$S
+npx supabase db push --remote --dry-run         # then production (linked project)
 ```
 
-Always check the `Target:` line says **splitpro-staging** before confirming.
+Always read the `Target:` line before confirming.
+
+`supabase/config.jsonc` holds the **production** sign-in settings. Staging
+differs in two values (anonymous test sign-ins on, site URL localhost); set
+them temporarily when pushing config to staging and never commit that change.
+Google sign-in is configured on production only; on staging use the
+"throwaway test user" button.
 
 ## Security: group passcode (Phase 0 lockdown)
 
