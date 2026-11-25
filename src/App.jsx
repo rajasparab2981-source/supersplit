@@ -341,7 +341,10 @@ export function App() {
           <TripsView groups={groups} trips={snap.trips || []} tripTotals={allTripTotals}
             onOpenTrip={(gid, tid) => openTrip(gid, tid, 'trips')} onGoGroups={() => setView({ name: 'groups' })} />
         )}
-        {view.name === 'analytics' && <AnalyticsView expenses={snap.expenses || []} selfMap={selfMap} />}
+        {view.name === 'analytics' && (
+          <AnalyticsView expenses={snap.expenses || []} selfMap={selfMap} groups={groups} trips={snap.trips || []}
+            groupSummaries={groupSummaries} premium={DB.isPremium()} toast={toast} onOpenPlan={() => setView({ name: 'profile' })} />
+        )}
         {view.name === 'profile' && <ProfileView plan={plan} toast={toast} />}
         {view.name === 'groups' && (
           <GroupsView
