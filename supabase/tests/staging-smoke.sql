@@ -74,6 +74,30 @@ begin
     insert into smoke (check_name, ok, detail) values ('users cannot grant themselves Premium', sqlstate = '42501', sqlerrm);
   end;
 
+  -- Milestone 2: trip planner
+  declare tr uuid; bi uuid; est bigint;
+  begin
+    tr := public.create_trip(g, 'Smoke trip');
+    perform public.update_trip_plan(jsonb_build_object('trip_id', tr, 'destination', 'Goa', 'start_date', '2026-12-20',
+      'end_date', '2026-12-24', 'adults', 4, 'status', 'planning', 'buffer_pct', 10));
+    bi := public.save_budget_item(jsonb_build_object('trip_id', tr, 'section', 'food', 'label', 'Breakfast',
+      'unit_price_minor', 25000, 'people', 4, 'days', 5));
+    select estimated_minor into est from public.trip_budget_items where id = bi;
+    insert into smoke (check_name, ok, detail) values ('trip plan + budget line: 250 x 4 people x 5 days = 5000', est = 500000, est::text);
+    begin
+      perform public.update_trip_plan(jsonb_build_object('trip_id', tr, 'end_date', '2026-12-01'));
+      insert into smoke (check_name, ok, detail) values ('return date before departure rejected', false, 'was accepted!');
+    exception when others then
+      insert into smoke (check_name, ok, detail) values ('return date before departure rejected', sqlstate = '22023', sqlerrm);
+    end;
+    begin
+      update public.trip_budget_items set estimated_minor = 1 where id = bi;
+      insert into smoke (check_name, ok, detail) values ('budget lines cannot be edited directly', false, 'was allowed!');
+    exception when others then
+      insert into smoke (check_name, ok, detail) values ('budget lines cannot be edited directly', sqlstate = '42501', sqlerrm);
+    end;
+  end;
+
   tok := public.create_invite(g);
   insert into smoke (check_name, ok, detail) values ('invite token created', length(tok) >= 20, length(tok)::text || ' chars');
   perform set_config('smoke.group', g::text, true);
@@ -91,6 +115,8 @@ begin
   insert into smoke (check_name, ok, detail) values ('outsider sees no groups', n = 0, n::text);
   select count(*) into n from public.expenses;
   insert into smoke (check_name, ok, detail) values ('outsider sees no expenses', n = 0, n::text);
+  select count(*) into n from public.trip_budget_items;
+  insert into smoke (check_name, ok, detail) values ('outsider sees no trip budgets', n = 0, n::text);
   select count(*) into n from storage.objects where bucket_id = 'receipts';
   insert into smoke (check_name, ok, detail) values ('outsider sees no receipts', n = 0, n::text);
   begin

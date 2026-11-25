@@ -64,9 +64,14 @@ describe('app shell screens render from real-shaped data', () => {
   });
 
   it('Trips lists trips with spending that excludes settlements', () => {
-    const html = renderToString(h(TripsView, { groups, trips, tripTotals: { t1: { totalSpent: 300, net: 100, hasSelf: true, count: 1 } }, onOpenTrip: noop, onGoGroups: noop }));
+    const props = { groups, trips, tripTotals: { t1: { totalSpent: 300, net: 100, hasSelf: true, count: 1 } }, plannedTotals: { t1: 1000 },
+      toast: noop, onOpenPlanner: noop, onGoGroups: noop, onOpenPlan: noop };
+    const strip = (s: string) => s.split('<!-- -->').join('');
+    const html = strip(renderToString(h(TripsView as never, { ...props, premium: true })));
     expect(html).toContain('Goa Weekend');
-    expect(html.replace(/<!-- -->/g, '')).toContain('1 expense · ₹300');
+    expect(html).toContain('spent ₹300 of ₹1,000 planned');
+    expect(html).toContain('1 expense');
+    expect(renderToString(h(TripsView as never, { ...props, premium: false }))).toContain('Planning is part of Premium');
   });
 
   it('Profile shows the plan and details; free plan explains the pause', () => {

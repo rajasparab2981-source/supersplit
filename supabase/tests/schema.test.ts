@@ -277,6 +277,77 @@ describe('categories and Premium trial', () => {
   });
 });
 
+describe('trip planner', () => {
+  let trip: string;
+  const item = (extra: Record<string, unknown>) => JSON.stringify({ trip_id: trip, section: 'food', label: 'Breakfast', unit_price_minor: 25000, ...extra });
+  const save = (user: string, extra: Record<string, unknown> = {}) => db.as<{ id: string }>(user, 'select save_budget_item($1::jsonb) as id', [item(extra)]);
+
+  it('existing trips stay active; planning details can be set and partly updated', async () => {
+    trip = (await one(db.as<{ t: string }>(asha, `select create_trip($1, 'Goa plan') as t`, [gid]))).t;
+    expect((await one(db.as<{ status: string }>(asha, 'select status from trips where id = $1', [trip]))).status).toBe('active');
+    await db.as(asha, 'select update_trip_plan($1::jsonb)', [JSON.stringify({ trip_id: trip, destination: ' Goa ', start_date: '2026-12-20',
+      end_date: '2026-12-24', adults: 4, children: 0, travel_type: 'friends', travel_style: 'standard', status: 'planning', budget_minor: 7200000 })]);
+    await db.as(asha, 'select update_trip_plan($1::jsonb)', [JSON.stringify({ trip_id: trip, buffer_pct: 15, alert_thresholds: [90, 50, 90] })]);
+    const t = await one(db.as<Record<string, unknown>>(asha, 'select destination, status, adults, buffer_pct::float as buffer, alert_thresholds, budget_minor::int as budget, end_date::text from trips where id = $1', [trip]));
+    expect(t).toEqual({ destination: 'Goa', status: 'planning', adults: 4, buffer: 15, alert_thresholds: [50, 90], budget: 7200000, end_date: '2026-12-24' });
+  });
+
+  it('rejects invalid details with a clear error', async () => {
+    const bad = (p: Record<string, unknown>) => sqlstate(db.as(asha, 'select update_trip_plan($1::jsonb)', [JSON.stringify({ trip_id: trip, ...p })]));
+    expect(await bad({ end_date: '2026-12-01' })).toBe('22023');       // before the start date
+    expect(await bad({ status: 'cancelled' })).toBe('22023');
+    expect(await bad({ buffer_pct: 250 })).toBe('22023');
+    expect(await bad({ alert_thresholds: [0] })).toBe('22023');
+    expect(await bad({ start_date: 'not-a-date' })).toBe('22023');
+  });
+
+  it('a budget line is unit price x quantity x people x days', async () => {
+    const id = (await one(save(asha, { people: 4, days: 5 }))).id;   // ₹250 x 4 people x 5 days
+    const r = await one(db.as<{ est: number; status: string; source: string }>(asha, 'select estimated_minor::int as est, status, source from trip_budget_items where id = $1', [id]));
+    expect(r).toEqual({ est: 500000, status: 'accepted', source: 'user' });
+    // Saving again with the same id updates it instead of adding a second line.
+    await save(asha, { id, people: 4, days: 5, quantity: 1.5, label: 'Big breakfast', day_date: '2026-12-21', booking_status: 'booked', paid: true });
+    const rows = await db.as<{ est: number; label: string }>(asha, 'select estimated_minor::int as est, label from trip_budget_items where trip_id = $1', [trip]);
+    expect(rows).toEqual([{ est: 750000, label: 'Big breakfast' }]);
+  });
+
+  it('splits must be between group members and add up to the line', async () => {
+    const base = { label: 'Hotel', section: 'stay', unit_price_minor: 1000000 };
+    expect(await sqlstate(save(asha, { ...base, shares: { [ashaM]: 600000, [bilalM]: 300000 } }))).toBe('22023');
+    await save(asha, { ...base, shares: { [ashaM]: 600000, [bilalM]: 400000 } });
+    await save(asha, { ...base, label: 'Scuba', section: 'activities', split_members: [ashaM, devM] });
+    const og = (await one(db.as<{ id: string }>(outsider, 'select id from groups limit 1'))).id;
+    const om = (await one(db.as<{ id: string }>(outsider, 'select id from group_members where group_id = $1', [og]))).id;
+    expect(await sqlstate(save(asha, { ...base, split_members: [om] }))).toBe('22023');
+    expect(await sqlstate(save(asha, { ...base, section: 'spaceship' }))).toBe('22023');
+    expect(await sqlstate(save(asha, { ...base, quantity: 0 }))).toBe('22023');
+  });
+
+  it('members can read the plan; outsiders and signed-out visitors cannot read or change it', async () => {
+    expect((await db.as(bilal, 'select id from trip_budget_items where trip_id = $1', [trip])).length).toBe(3);
+    expect(await db.as(outsider, 'select id from trip_budget_items')).toEqual([]);
+    expect(await sqlstate(save(outsider))).toBe('42501');
+    expect(await sqlstate(db.asAnon('select * from trip_budget_items'))).toBe('42501');
+    expect(await sqlstate(db.as(bilal, `update trip_budget_items set estimated_minor = 1`))).toBe('42501'); // no direct writes
+  });
+
+  it('planning is Premium: a member whose trial ended can view but not change', async () => {
+    await save(bilal, { label: 'Bilal suggests', status: 'suggested' }); // on trial: allowed
+    await db.admin(`update entitlements set trial_ends_at = now() - interval '1 day' where user_id = $1`, [bilal]);
+    expect(await sqlstate(save(bilal, { label: 'After trial' }))).toBe('P0003');
+    expect(await sqlstate(db.as(bilal, 'select update_trip_plan($1::jsonb)', [JSON.stringify({ trip_id: trip, status: 'active' })]))).toBe('P0003');
+    expect((await db.as(bilal, 'select id from trip_budget_items where trip_id = $1', [trip])).length).toBe(4);
+    await db.admin(`update entitlements set trial_ends_at = now() + interval '30 days' where user_id = $1`, [bilal]);
+  });
+
+  it('deleted lines disappear from the plan and can be brought back by saving again', async () => {
+    const id = (await one(db.as<{ id: string }>(asha, `select id from trip_budget_items where label = 'Scuba'`))).id;
+    await db.as(asha, 'select delete_budget_item($1)', [id]);
+    expect(await sqlstate(db.as(asha, 'select delete_budget_item($1)', [id]))).toBe('P0002');
+    expect((await db.as(asha, 'select id from trip_budget_items where trip_id = $1 and deleted_at is null', [trip])).length).toBe(3);
+  });
+});
+
 describe('roles', () => {
   it('only the owner can delete the group; the last owner cannot leave', async () => {
     expect(await sqlstate(db.as(bilal, 'select delete_group($1)', [gid]))).toBe('42501');

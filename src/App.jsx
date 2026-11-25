@@ -15,6 +15,7 @@ import { BottomNav } from './ui/BottomNav';
 import { ActionsSheet, ConfirmSheet, Header, ToastStack, useToasts } from './ui/primitives';
 import { AnalyticsView } from './views/AnalyticsView';
 import { HomeView } from './views/HomeView';
+import { PlannerView } from './views/PlannerView';
 import { ProfileView } from './views/ProfileView';
 import { TripsView } from './views/TripsView';
 import { GroupView } from './views/GroupView';
@@ -63,13 +64,13 @@ export function App() {
 
   const groups = useMemo(() => DB.getGroups(), [snap]);
   const currentGroup = useMemo(() => {
-    if (view.name === 'group' || view.name === 'trip') return groups.find((g) => g.id === view.groupId) || null;
+    if (['group', 'trip', 'planner'].includes(view.name)) return groups.find((g) => g.id === view.groupId) || null;
     return null;
   }, [view, groups]);
   const currentGroupMembers = useMemo(() => currentGroup ? DB.getMembers(currentGroup.id) : [], [currentGroup, snap]);
   const currentGroupTrips = useMemo(() => currentGroup ? DB.getTrips(currentGroup.id) : [], [currentGroup, snap]);
   const currentTrip = useMemo(() => {
-    if (view.name !== 'trip' || !currentGroup) return null;
+    if (!['trip', 'planner'].includes(view.name) || !currentGroup) return null;
     return currentGroupTrips.find((t) => t.id === view.tripId) || null;
   }, [view, currentGroup, currentGroupTrips]);
   const currentTripExpenses = useMemo(() => currentTrip ? DB.getExpenses(currentTrip.id) : [], [currentTrip, snap]);
@@ -121,7 +122,7 @@ export function App() {
   useEffect(() => {
     if (authState !== 'signed_in') return;
     if (view.name === 'group' && !currentGroup) { setView({ name: 'groups' }); toast('Group is no longer available', 'error'); }
-    else if (view.name === 'trip' && (!currentGroup || !currentTrip)) {
+    else if (['trip', 'planner'].includes(view.name) && (!currentGroup || !currentTrip)) {
       if (currentGroup) { setView({ name: 'group', groupId: currentGroup.id }); toast('Trip was deleted', 'error'); }
       else { setView({ name: 'groups' }); toast('Group is no longer available', 'error'); }
     }
@@ -310,11 +311,20 @@ export function App() {
   const baseHeader = { onCalc: () => setCalcOpen(true), syncStatus: DB.getLoadError() ? null : 'live' };
   const TAB_TITLES = { home: 'SplitPro', groups: 'Groups', trips: 'Trips', analytics: 'Analytics', profile: 'Profile' };
   const plan = DB.getPlan();
-  const activeTab = TAB_TITLES[view.name] ? view.name : (view.from || 'groups');
+  const activeTab = TAB_TITLES[view.name] ? view.name : view.name === 'planner' || view.from === 'planner' ? 'trips' : (view.from || 'groups');
+  const openPlanner = (groupId, tripId) => setView({ name: 'planner', groupId, tripId });
+  const plannedTotals = {};
+  for (const t of (snap.trips || [])) {
+    const planned = DB.getBudgetItems(t.id).filter((i) => i.status === 'accepted').reduce((s, i) => s + i.estimated_minor, 0);
+    plannedTotals[t.id] = Math.round(planned * (1 + Number(t.buffer_pct ?? 0) / 100)) / 100;
+  }
   const openTrip = (groupId, tripId, from) => setView({ name: 'trip', groupId, tripId, from });
   if (TAB_TITLES[view.name])       headerProps = { ...baseHeader, title: TAB_TITLES[view.name], subtitle: view.name === 'home' ? (DB.isStaging() ? 'Staging' : 'Split bills in ₹') : null };
   else if (view.name === 'group')  headerProps = { ...baseHeader, title: currentGroup?.name || 'Group', subtitle: null, onBack: () => setView({ name: 'groups' }) };
-  else                              headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: currentGroup?.name, onBack: () => setView(view.from && view.from !== 'groups' ? { name: view.from } : { name: 'group', groupId: currentGroup.id }) };
+  else if (view.name === 'planner') headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: 'Trip plan', onBack: () => setView({ name: 'trips' }) };
+  else                              headerProps = { ...baseHeader, title: currentTrip?.name || 'Trip', subtitle: currentGroup?.name, onBack: () => setView(
+    view.from === 'planner' ? { name: 'planner', groupId: currentGroup.id, tripId: currentTrip.id }
+      : view.from && view.from !== 'groups' ? { name: view.from } : { name: 'group', groupId: currentGroup.id }) };
 
   const myMember = currentGroupMembers.find((m) => m.name === currentSelf);
 
@@ -338,8 +348,9 @@ export function App() {
           />
         )}
         {view.name === 'trips' && (
-          <TripsView groups={groups} trips={snap.trips || []} tripTotals={allTripTotals}
-            onOpenTrip={(gid, tid) => openTrip(gid, tid, 'trips')} onGoGroups={() => setView({ name: 'groups' })} />
+          <TripsView groups={groups} trips={snap.trips || []} tripTotals={allTripTotals} plannedTotals={plannedTotals}
+            premium={DB.isPremium()} toast={toast} onOpenPlanner={openPlanner}
+            onGoGroups={() => setView({ name: 'groups' })} onOpenPlan={() => setView({ name: 'profile' })} />
         )}
         {view.name === 'analytics' && (
           <AnalyticsView expenses={snap.expenses || []} selfMap={selfMap} groups={groups} trips={snap.trips || []}
@@ -369,6 +380,11 @@ export function App() {
             onChangeSelf={() => setInviteOpen(true)}
             onOpenActions={() => setActionsOpen('group')}
           />
+        )}
+        {view.name === 'planner' && currentGroup && currentTrip && (
+          <PlannerView group={currentGroup} trip={currentTrip} members={currentGroupMembers} expenses={currentTripExpenses}
+            items={DB.getBudgetItems(currentTrip.id)} premium={DB.isPremium()} toast={toast}
+            onOpenExpenses={() => openTrip(currentGroup.id, currentTrip.id, 'planner')} onOpenPlan={() => setView({ name: 'profile' })} />
         )}
         {view.name === 'trip' && currentGroup && currentTrip && (
           <TripView
