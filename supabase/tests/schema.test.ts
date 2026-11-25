@@ -225,6 +225,58 @@ describe('invites', () => {
   });
 });
 
+describe('categories and Premium trial', () => {
+  const dinner = (category: string) => db.as(asha, 'select create_expense($1::jsonb) as id', [expense({
+    category, description: 'Cat test', amount_minor: 200,
+    payers: [{ member_id: ashaM, amount_minor: 200 }], splits: [{ member_id: ashaM, amount_minor: 200 }] })]);
+
+  it('has the built-in categories, including the original eight', async () => {
+    const ids = (await db.as<{ id: string }>(asha, 'select id from categories where group_id is null')).map((r) => r.id);
+    expect(ids).toEqual(expect.arrayContaining(['food', 'travel', 'stay', 'drinks', 'fun', 'shopping', 'fuel', 'other',
+      'groceries', 'transport', 'rent', 'utilities', 'medical', 'activities']));
+    expect(await sqlstate(db.asAnon('select * from categories'))).toBe('42501');
+  });
+
+  it('accepts new built-in categories and rejects unknown ones', async () => {
+    const id = (await one(dinner('groceries') as Promise<{ id: string }[]>)).id;
+    await db.as(asha, 'select delete_expense($1)', [id]);
+    expect(await sqlstate(dinner('not_a_category'))).toBe('22023');
+  });
+
+  it('new accounts start a 30-day trial', async () => {
+    const p = await one(db.as<{ plan: string; days_left: number }>(asha, 'select plan, days_left from my_plan()'));
+    expect(p.plan).toBe('trial');
+    expect(p.days_left).toBe(30);
+    expect(await db.as(asha, 'select user_id from entitlements where user_id <> $1', [asha])).toEqual([]); // own row only
+    expect(await sqlstate(db.as(asha, `update entitlements set premium_until = now() + interval '1 year'`))).toBe('42501');
+  });
+
+  it('custom categories: Premium only, visible to the group only, usable in that group only', async () => {
+    const cid = (await one(db.as<{ c: string }>(asha, `select create_category($1, 'Scuba', '🤿') as c`, [gid]))).c;
+    expect(await sqlstate(db.as(asha, `select create_category($1, ' scuba ')`, [gid]))).toBe('22023'); // duplicate name
+    const id = (await one(dinner(cid) as Promise<{ id: string }[]>)).id;
+    await db.as(asha, 'select delete_expense($1)', [id]);
+    expect(await db.as(outsider, 'select id from categories where id = $1', [cid])).toEqual([]);
+    // Outsider's own group cannot use Asha's group's category.
+    const og = (await one(db.as<{ id: string }>(outsider, 'select id from groups limit 1'))).id;
+    const om = (await one(db.as<{ id: string }>(outsider, 'select id from group_members where group_id = $1', [og]))).id;
+    expect(await sqlstate(db.as(outsider, 'select create_expense($1::jsonb)', [JSON.stringify({ group_id: og, description: 'x',
+      amount_minor: 100, category: cid, payers: [{ member_id: om, amount_minor: 100 }], splits: [{ member_id: om, amount_minor: 100 }] })]))).toBe('22023');
+  });
+
+  it('after the trial ends the plan is free and Premium features pause; a paid period re-enables them', async () => {
+    await db.admin(`update entitlements set trial_ends_at = now() - interval '1 day' where user_id = $1`, [asha]);
+    expect((await one(db.as<{ plan: string }>(asha, 'select plan from my_plan()'))).plan).toBe('free');
+    expect(await sqlstate(db.as(asha, `select create_category($1, 'Paused')`, [gid]))).toBe('P0003');
+    // Core splitting still works on the free plan.
+    const id = (await one(dinner('food') as Promise<{ id: string }[]>)).id;
+    await db.as(asha, 'select delete_expense($1)', [id]);
+    await db.admin(`update entitlements set premium_until = now() + interval '30 days' where user_id = $1`, [asha]);
+    expect((await one(db.as<{ plan: string }>(asha, 'select plan from my_plan()'))).plan).toBe('premium');
+    await db.as(asha, `select create_category($1, 'Paid again')`, [gid]);
+  });
+});
+
 describe('roles', () => {
   it('only the owner can delete the group; the last owner cannot leave', async () => {
     expect(await sqlstate(db.as(bilal, 'select delete_group($1)', [gid]))).toBe('42501');
