@@ -69,7 +69,7 @@ export function TripRecap({ trip, group, expenses, balances }) {
     <React.Fragment>
       <p className="section-title">Trip recap</p>
       <div className="summary" style={{
-        background: `radial-gradient(120% 100% at 0% 0%, ${group.color}24 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}18 0%, transparent 60%), linear-gradient(140deg, #15151E 0%, #1C1C2C 100%)`,
+        background: `radial-gradient(120% 100% at 0% 0%, ${group.color}24 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}18 0%, transparent 60%), linear-gradient(140deg, var(--surface) 0%, var(--surface-2) 100%)`,
         borderColor: `${group.color}40`,
         padding: 20,
       }}>
@@ -86,8 +86,8 @@ export function TripRecap({ trip, group, expenses, balances }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, minWidth: 0 }}>
                   <Avatar name={stats.topSpender} size="sm" />
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topSpender}</div>
-                    <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.topSpenderAmt)}</div>
+                    <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topSpender}</div>
+                    <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.topSpenderAmt)}</div>
                   </div>
                 </div>
               </div>
@@ -97,7 +97,7 @@ export function TripRecap({ trip, group, expenses, balances }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, minWidth: 0 }}>
                 <span style={{ fontSize: 24, flexShrink: 0 }}>{stats.topCat.emoji}</span>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topCat.label}</div>
+                  <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topCat.label}</div>
                   <div style={{ fontFamily: 'Inter', fontWeight: 500, fontSize: 12, color: 'var(--text-soft)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.topCatPct}% of spend</div>
                 </div>
               </div>
@@ -105,15 +105,15 @@ export function TripRecap({ trip, group, expenses, balances }) {
             {stats.busiestDay && (
               <div className="recap-cell">
                 <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Biggest day</div>
-                <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtDate(stats.busiestDay)}</div>
-                <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.busiestDayAmt)}</div>
+                <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtDate(stats.busiestDay)}</div>
+                <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.busiestDayAmt)}</div>
               </div>
             )}
             {stats.biggest && (
               <div className="recap-cell">
                 <div style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 10, color: 'var(--text-mute)', textTransform: 'uppercase', letterSpacing: '.08em' }}>Biggest expense</div>
-                <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.biggest.description}</div>
-                <div style={{ fontFamily: 'Manrope', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.biggest.amount)}</div>
+                <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 14, color: 'var(--text)', marginTop: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stats.biggest.description}</div>
+                <div style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: 13, color: 'var(--primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fmtINR(stats.biggest.amount)}</div>
               </div>
             )}
           </div>

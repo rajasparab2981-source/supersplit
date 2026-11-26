@@ -49,8 +49,8 @@ export function ReactionBar({ expense, self, onReact }) {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '6px 10px', minHeight: 32, borderRadius: 999,
-              background: youReacted ? 'rgba(0,229,160,.15)' : 'var(--surface-2)',
-              border: '1px solid ' + (youReacted ? 'rgba(0,229,160,.4)' : 'var(--border)'),
+              background: youReacted ? 'rgb(var(--accent-rgb) / .15)' : 'var(--surface-2)',
+              border: '1px solid ' + (youReacted ? 'rgb(var(--accent-rgb) / .4)' : 'var(--border)'),
               fontFamily: 'Inter', fontWeight: 600, fontSize: 12,
               color: youReacted ? 'var(--primary)' : 'var(--text-soft)',
               cursor: 'pointer',
@@ -85,7 +85,7 @@ export function ReactionBar({ expense, self, onReact }) {
               background: 'var(--surface-3)',
               border: '1px solid var(--border-2)',
               borderRadius: 999,
-              boxShadow: '0 12px 32px rgba(0,0,0,.5)',
+              boxShadow: '0 12px 32px rgb(var(--shadow-rgb) / .15)',
               zIndex: 5,
               // The popover is ~230px wide and anchored to a button near the
               // right edge; without this it ran off-screen on narrow phones.
@@ -99,7 +99,7 @@ export function ReactionBar({ expense, self, onReact }) {
                   style={{
                     width: 32, height: 32, borderRadius: 999,
                     fontSize: 18,
-                    background: myReaction === emoji ? 'rgba(0,229,160,.2)' : 'transparent',
+                    background: myReaction === emoji ? 'rgb(var(--accent-rgb) / .2)' : 'transparent',
                     border: 'none', cursor: 'pointer',
                     transition: 'background .12s ease, transform .12s ease',
                   }}

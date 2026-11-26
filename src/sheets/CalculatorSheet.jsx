@@ -86,15 +86,15 @@ export function CalculatorSheet({ open, onClose }) {
   const btnStyle = (variant) => ({
     height: 56,
     borderRadius: 14,
-    fontFamily: 'Manrope', fontWeight: 700, fontSize: 18,
-    background: variant === 'op' ? 'rgba(0,229,160,.1)' :
+    fontFamily: 'Inter', fontWeight: 700, fontSize: 18,
+    background: variant === 'op' ? 'rgb(var(--accent-rgb) / .1)' :
                 variant === 'eq' ? 'var(--primary)' :
                 variant === 'fn' ? 'var(--surface-2)' :
                 'var(--surface)',
-    color: variant === 'eq' ? '#0A1A14' :
+    color: variant === 'eq' ? 'var(--on-cta)' :
            variant === 'op' ? 'var(--primary)' :
            'var(--text)',
-    border: '1px solid ' + (variant === 'op' ? 'rgba(0,229,160,.25)' : 'var(--border)'),
+    border: '1px solid ' + (variant === 'op' ? 'rgb(var(--accent-rgb) / .25)' : 'var(--border)'),
     transition: 'transform .08s ease, background .15s ease',
   });
 
@@ -126,7 +126,7 @@ export function CalculatorSheet({ open, onClose }) {
           {prev != null && op ? `${formatNum(prev)} ${op}` : ' '}
         </div>
         <div style={{
-          fontFamily: 'Manrope', fontWeight: 800,
+          fontFamily: 'Inter', fontWeight: 800,
           // Fluid so long results shrink instead of wrapping mid-number.
           fontSize: 'clamp(30px, 9vw, 42px)', letterSpacing: '-.03em',
           color: display === 'Error' ? 'var(--negative)' : 'var(--text)',

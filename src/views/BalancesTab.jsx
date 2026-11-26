@@ -70,7 +70,7 @@ export function BalancesTab({ balances, self, expenses }) {
             <div key={r.name} style={{ padding: '10px 4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                 <Avatar name={r.name} size="sm" />
-                <span style={{ fontFamily: 'Manrope', fontWeight: 600, fontSize: 14, flex: 1, color: 'var(--text)' }}>
+                <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, flex: 1, color: 'var(--text)' }}>
                   {isSelf ? `${r.name} (you)` : r.name}
                 </span>
                 <span className="amt amt-sm" style={{ color: r.paid > 0 ? 'var(--text)' : 'var(--text-mute)' }}>
@@ -79,7 +79,7 @@ export function BalancesTab({ balances, self, expenses }) {
               </div>
               <div style={{
                 height: 6, borderRadius: 999,
-                background: 'rgba(255,255,255,.05)',
+                background: 'rgb(var(--ink-rgb) / .05)',
                 overflow: 'hidden',
               }}>
                 <div style={{
@@ -87,7 +87,7 @@ export function BalancesTab({ balances, self, expenses }) {
                   background: r.paid > 0
                     ? (isSelf
                       ? 'linear-gradient(90deg, var(--primary) 0%, #1BFFB8 100%)'
-                      : 'linear-gradient(90deg, rgba(0,229,160,.5) 0%, rgba(0,229,160,.8) 100%)')
+                      : 'linear-gradient(90deg, rgb(var(--accent-rgb) / .5) 0%, rgb(var(--accent-rgb) / .8) 100%)')
                     : 'transparent',
                   borderRadius: 999,
                   transition: 'width .35s cubic-bezier(.2,.8,.25,1)',

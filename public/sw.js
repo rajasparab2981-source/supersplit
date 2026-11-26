@@ -7,7 +7,7 @@
    - /assets/*:      cache first (Vite fingerprints these, so they never change).
    - Everything else (Supabase, fonts): not touched. */
 
-const VERSION = 'splitpro-v2';
+const VERSION = 'splitpro-v3';
 const SHELL = ['/', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

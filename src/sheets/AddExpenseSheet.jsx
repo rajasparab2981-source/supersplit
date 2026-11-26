@@ -166,8 +166,8 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
               style={{
                 position: 'absolute', top: 8, right: 8,
                 width: 32, height: 32, borderRadius: 999,
-                background: 'rgba(0,0,0,.6)',
-                border: '1px solid rgba(255,255,255,.15)',
+                background: 'var(--scrim)',
+                border: '1px solid rgb(var(--ink-rgb) / .15)',
                 color: 'white',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
@@ -285,7 +285,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 12px',
                     background: 'var(--surface)',
-                    border: '1px solid ' + (included ? 'rgba(0,229,160,.35)' : 'var(--border)'),
+                    border: '1px solid ' + (included ? 'rgb(var(--accent-rgb) / .35)' : 'var(--border)'),
                     borderRadius: 'var(--r-2)',
                     opacity: included ? 1 : .55,
                   }}
@@ -299,15 +299,15 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
                       width: 28, height: 28, borderRadius: 8,
                       border: '2px solid ' + (included ? 'var(--primary)' : 'var(--border-2)'),
                       background: included ? 'var(--primary)' : 'transparent',
-                      color: '#0A1A14',
-                      fontFamily: 'Manrope', fontWeight: 800, fontSize: 15,
+                      color: 'var(--on-cta)',
+                      fontFamily: 'Inter', fontWeight: 800, fontSize: 15,
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0,
                     }}
                     aria-label={included ? `Exclude ${m.name}` : `Include ${m.name}`}
                   >{included ? '✓' : ''}</button>
                   <Avatar name={m.name} size="sm" />
-                  <span style={{ fontFamily: 'Manrope', fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {m.name === self ? `${m.name} (you)` : m.name}
                   </span>
                   {/* Shrinkable but never below 84px, so long names and the
@@ -329,7 +329,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
                       disabled={!included}
                       style={{
                         padding: '10px 26px 10px 10px',
-                        fontFamily: 'Manrope', fontWeight: 700,
+                        fontFamily: 'Inter', fontWeight: 700,
                         // Must stay >=16px or iOS zooms the sheet on every tap.
                         fontSize: 16,
                         textAlign: 'right',
@@ -338,7 +338,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
                     />
                     <span style={{
                       position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                      color: 'var(--text-mute)', fontFamily: 'Manrope', fontWeight: 600, fontSize: 13,
+                      color: 'var(--text-mute)', fontFamily: 'Inter', fontWeight: 600, fontSize: 13,
                       pointerEvents: 'none',
                     }}>{splitMode === 'percentage' ? '%' : '₹'}</span>
                   </div>

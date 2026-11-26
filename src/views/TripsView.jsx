@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DB } from '../db/db';
 import { dayLabel } from '../lib/analytics';
 import { fmtINR } from '../lib/money';
@@ -8,8 +8,10 @@ import { Icon } from '../ui/Icon';
 const STATUS = { planning: 'Planning', active: 'In progress', completed: 'Completed' };
 
 /** All your trips across groups, and the way into the Smart Trip Planner. */
-export function TripsView({ groups, trips, tripTotals, plannedTotals = {}, premium, toast, onOpenPlanner, onGoGroups, onOpenPlan }) {
+export function TripsView({ groups, trips, tripTotals, plannedTotals = {}, premium, toast, onOpenPlanner, onGoGroups, onOpenPlan, autoPlan }) {
   const [planning, setPlanning] = useState(false);
+  // Arriving from Home's "Plan a trip": open the form straight away.
+  useEffect(() => { if (autoPlan && premium && groups.length > 0) setPlanning(true); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const groupById = Object.fromEntries(groups.map((g) => [g.id, g]));
   const sorted = [...trips].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 

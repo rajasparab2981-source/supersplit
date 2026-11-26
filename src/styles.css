@@ -1,44 +1,120 @@
+/* ============================================================
+   SplitPro design tokens.
+   Light is the default; [data-theme="dark"] switches every token.
+   Semantic rules:
+     --cta-bg / --on-cta   main buttons and the Add action
+     --accent*             highlights, icons, active states (never body text on white: use --accent-ink)
+     --positive            money you are owed, successful payments
+     --negative            money you owe, failures
+   ============================================================ */
 :root {
-  --bg:         #08080C;
-  --bg-soft:    #0F0F16;
-  --surface:    #15151E;
-  --surface-2:  #1C1C28;
-  --surface-3:  #25253A;
-  --border:     rgba(255,255,255,0.06);
-  --border-2:   rgba(255,255,255,0.10);
-  --border-3:   rgba(255,255,255,0.16);
+  color-scheme: light;
+  --bg:         #F5F7FA;
+  --bg-soft:    #F3FAFD;
+  --surface:    #FFFFFF;
+  --surface-2:  #F3F8FC;
+  --surface-3:  #E6EEF5;
+  --ink-rgb:    20 43 74;
+  --border:     rgb(var(--ink-rgb) / .08);
+  --border-2:   rgb(var(--ink-rgb) / .14);
+  --border-3:   rgb(var(--ink-rgb) / .24);
 
-  --text:       #FFFFFF;
-  --text-soft:  #A0A0B0;
-  --text-mute:  #6B6B7D;
-  --text-faint: #45455A;
+  --text:       #172B45;
+  --text-soft:  #475569;
+  --text-mute:  #64748B;
+  --text-faint: #94A3B8;
 
-  --primary:    #00E5A0;        /* neon money green = "you're owed" */
-  --primary-2:  #1BFFB8;
-  --primary-deep:#00B080;
-  --primary-soft:rgba(0,229,160,.12);
+  --brand:      #142B4A;
+  --cta-bg:     #142B4A;
+  --cta-bg-2:   #1E3D66;
+  --on-cta:     #FFFFFF;
 
-  --negative:   #FF4D6D;        /* coral red = "you owe" */
-  --negative-soft: rgba(255,77,109,.12);
+  --accent-rgb: 0 184 169;
+  --accent:     #00B8A9;
+  --accent-ink: #00776E;        /* accent that passes contrast as text on white */
+  --accent-soft: rgb(var(--accent-rgb) / .12);
+  --accent2-rgb: 59 111 217;
+  --accent2:    #3B6FD9;
 
-  --gold:       #FFC857;
-  --purple:     #6E5BFF;
-  --warning:    #FFA740;
+  --positive-rgb: 22 163 106;
+  --positive:   #0E8A57;
+  --positive-soft: rgb(var(--positive-rgb) / .12);
+  --negative-rgb: 220 76 76;
+  --negative:   #C93A3A;
+  --negative-soft: rgb(var(--negative-rgb) / .10);
+  --warning-rgb: 245 166 35;
+  --warning:    #A9650A;
+  --warning-fill: #F5A623;
+
+  /* Legacy names used across the screens. */
+  --primary:    var(--accent-ink);
+  --primary-2:  #009C90;
+  --primary-deep: #00635C;
+  --primary-soft: var(--accent-soft);
+  --gold:       var(--warning-fill);
+  --purple:     var(--accent2);
+
+  --glass:      rgb(255 255 255 / .92);
+  --scrim:      rgb(15 27 45 / .45);
+  --shadow-rgb: 20 43 74;
+  --shadow-card: 0 1px 2px rgb(var(--shadow-rgb) / .04), 0 8px 24px rgb(var(--shadow-rgb) / .07);
+  --shadow-glow: 0 6px 18px rgb(var(--shadow-rgb) / .22);
+  --shadow-pop:  0 12px 40px rgb(var(--shadow-rgb) / .18);
 
   --s-1: 8px; --s-2: 16px; --s-3: 24px; --s-4: 32px; --s-5: 40px; --s-6: 56px;
-  --r-1: 10px; --r-2: 14px; --r-3: 20px; --r-4: 28px;
-
-  --shadow-glow: 0 0 0 1px rgba(0,229,160,.25), 0 8px 32px rgba(0,229,160,.18);
-  --shadow-card: 0 12px 32px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+  --r-1: 12px; --r-2: 14px; --r-3: 20px; --r-4: 28px;
 
   --app-max: 480px;
   --header-h: 64px;
 
-  /* Safe-area shorthands — resolve to 0px on devices without notches. */
+  /* Safe-area shorthands: resolve to 0px on devices without notches. */
   --sa-top:    env(safe-area-inset-top, 0px);
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left:   env(safe-area-inset-left, 0px);
   --sa-right:  env(safe-area-inset-right, 0px);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:         #0B1524;
+  --bg-soft:    #0F1C2E;
+  --surface:    #132338;
+  --surface-2:  #182B44;
+  --surface-3:  #213753;
+  --ink-rgb:    255 255 255;
+
+  --text:       #EEF4FA;
+  --text-soft:  #B4C2D3;
+  --text-mute:  #8A9AAF;
+  --text-faint: #5C6C82;
+
+  --cta-bg:     #2DD4C4;
+  --cta-bg-2:   #5EE3D6;
+  --on-cta:     #06202B;
+
+  --accent-rgb: 45 212 196;
+  --accent:     #2DD4C4;
+  --accent-ink: #2DD4C4;
+  --accent2-rgb: 122 162 255;
+  --accent2:    #7AA2FF;
+
+  --positive-rgb: 52 211 153;
+  --positive:   #34D399;
+  --negative-rgb: 255 107 107;
+  --negative:   #FF6B6B;
+  --warning-rgb: 255 200 87;
+  --warning:    #FFC857;
+  --warning-fill: #FFC857;
+
+  --primary-2:  #5EE3D6;
+  --primary-deep: #14B8A6;
+
+  --glass:      rgb(11 21 36 / .92);
+  --scrim:      rgb(0 0 0 / .6);
+  --shadow-rgb: 0 0 0;
+  --shadow-card: 0 8px 24px rgb(0 0 0 / .35);
+  --shadow-glow: 0 6px 18px rgb(var(--accent-rgb) / .25);
+  --shadow-pop:  0 12px 40px rgb(0 0 0 / .5);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -56,10 +132,8 @@ html, body {
   font-weight: 400; font-size: 15px; line-height: 1.5;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
-  background-image:
-    radial-gradient(1200px 600px at 50% -200px, rgba(0,229,160,.07), transparent 60%),
-    radial-gradient(800px 500px at 90% 100%, rgba(110,91,255,.06), transparent 60%);
-  background-attachment: fixed;
+  background-image: linear-gradient(180deg, var(--bg-soft) 0, var(--bg) 320px);
+  background-repeat: no-repeat;
   min-height: 100vh;
   min-height: 100dvh;          /* dvh excludes mobile browser chrome */
   /* Nothing should ever scroll sideways on a phone. */
@@ -113,7 +187,7 @@ input[type="date"] { min-height: 52px; display: block; }
 input::placeholder, textarea::placeholder { color: var(--text-faint); }
 input:focus, select:focus, textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(0,229,160,.12);
+  box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / .12);
   background: var(--surface-2);
 }
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); cursor: pointer; }
@@ -141,7 +215,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   display: flex; align-items: center; justify-content: space-between;
   padding-left: var(--s-2);
   padding-right: var(--s-2);
-  background: rgba(8,8,12,.85);
+  background: var(--glass);
   backdrop-filter: blur(20px) saturate(150%);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
   border-bottom: 1px solid transparent;
@@ -150,12 +224,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .app-header.scrolled { border-bottom-color: var(--border); }
 
 .app-header h1 {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-weight: 800;
   font-size: 20px;
   letter-spacing: -.03em;
   margin: 0;
-  background: linear-gradient(135deg, #FFFFFF 0%, #C7C7E0 100%);
+  background: linear-gradient(135deg, #FFFFFF 0%, var(--text-soft) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -207,10 +281,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   min-height: 40px; padding: 0 16px;
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  background: rgba(0,229,160,.08); border: 1px solid rgba(0,229,160,.25);
+  background: rgb(var(--accent-rgb) / .08); border: 1px solid rgb(var(--accent-rgb) / .25);
   transition: background .15s ease;
 }
-.section-row .add-btn:hover { background: rgba(0,229,160,.15); }
+.section-row .add-btn:hover { background: rgb(var(--accent-rgb) / .15); }
 
 /* ---------- Summary hero ---------- */
 .summary {
@@ -220,19 +294,19 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   margin: var(--s-2) 0;
   overflow: hidden;
   background:
-    radial-gradient(120% 100% at 0% 0%, rgba(0,229,160,.16) 0%, transparent 60%),
-    radial-gradient(100% 80% at 100% 100%, rgba(110,91,255,.16) 0%, transparent 60%),
-    linear-gradient(140deg, #15151E 0%, #1C1C2C 100%);
+    radial-gradient(120% 100% at 0% 0%, rgb(var(--accent-rgb) / .16) 0%, transparent 60%),
+    radial-gradient(100% 80% at 100% 100%, rgb(var(--accent2-rgb) / .16) 0%, transparent 60%),
+    linear-gradient(140deg, var(--surface) 0%, var(--surface-2) 100%);
   border: 1px solid var(--border-2);
 }
 .summary .grain {
   position: absolute; inset: 0; pointer-events: none; opacity: .04;
   background-image:
-    radial-gradient(circle at 1px 1px, rgba(255,255,255,1) 1px, transparent 0);
+    radial-gradient(circle at 1px 1px, rgb(var(--ink-rgb) / 1) 1px, transparent 0);
   background-size: 4px 4px;
 }
 .summary .net {
-  font-family: 'Manrope'; font-weight: 800;
+  font-family: 'Inter'; font-weight: 800;
   /* Fluid: large balances like ₹1,24,500 no longer overflow the card on
      a 320px screen, and it still reads big on a 480px one. */
   font-size: clamp(30px, 9.5vw, 42px);
@@ -241,7 +315,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   position: relative;
   overflow-wrap: anywhere;
 }
-.summary .net.pos { color: var(--primary); text-shadow: 0 0 24px rgba(0,229,160,.25); }
+.summary .net.pos { color: var(--primary); text-shadow: 0 0 24px rgb(var(--accent-rgb) / .25); }
 .summary .net.neg { color: var(--negative); }
 .summary .net.zero { color: var(--text-soft); }
 
@@ -268,7 +342,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   color: var(--text-mute); text-transform: uppercase; letter-spacing: .08em;
 }
 .summary-split .col-amt {
-  font-family: 'Manrope'; font-weight: 800;
+  font-family: 'Inter'; font-weight: 800;
   font-size: 17px; letter-spacing: -.01em;
   margin-top: 4px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -291,7 +365,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   color: var(--text-mute); letter-spacing: .04em; text-transform: uppercase;
 }
 .self-bar .self-current {
-  font-family: 'Manrope'; font-weight: 700; font-size: 14px;
+  font-family: 'Inter'; font-weight: 700; font-size: 14px;
   color: var(--text);
   display: inline-flex; align-items: center; gap: 8px;
   flex: 1;
@@ -304,10 +378,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   min-height: 40px; padding: 0 16px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  background: rgba(0,229,160,.1);
-  border: 1px solid rgba(0,229,160,.2);
+  background: rgb(var(--accent-rgb) / .1);
+  border: 1px solid rgb(var(--accent-rgb) / .2);
 }
-.self-bar button:hover { background: rgba(0,229,160,.18); }
+.self-bar button:hover { background: rgb(var(--accent-rgb) / .18); }
 
 /* ---------- Row / list ---------- */
 .row {
@@ -342,7 +416,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .row-main { flex: 1; min-width: 0; }
 .row-title {
-  font-family: 'Manrope'; font-weight: 700; font-size: 16px;
+  font-family: 'Inter'; font-weight: 700; font-size: 16px;
   letter-spacing: -.01em; color: var(--text);
   margin: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -359,7 +433,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em;
 }
 .row-balance .b-amt {
-  font-family: 'Manrope'; font-weight: 800; font-size: 16px;
+  font-family: 'Inter'; font-weight: 800; font-size: 16px;
   letter-spacing: -.02em; margin-top: 2px;
 }
 .row-balance .b-amt.pos { color: var(--primary); }
@@ -376,10 +450,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   font-size: 44px;
   background: linear-gradient(135deg, var(--surface-2) 0%, var(--surface) 100%);
   border: 1px solid var(--border);
-  box-shadow: 0 12px 32px rgba(0,0,0,.4);
+  box-shadow: 0 12px 32px rgb(var(--shadow-rgb) / .12);
 }
 .empty h3 {
-  font-family: 'Manrope'; font-weight: 700;
+  font-family: 'Inter'; font-weight: 700;
   font-size: 20px; letter-spacing: -.02em;
   margin: 0 0 6px; color: var(--text);
 }
@@ -393,7 +467,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   display: inline-flex; align-items: center; justify-content: center;
   gap: 8px; height: 52px; padding: 0 22px;
   border-radius: var(--r-2);
-  font-family: 'Manrope'; font-weight: 700; font-size: 15px;
+  font-family: 'Inter'; font-weight: 700; font-size: 15px;
   letter-spacing: -.01em;
   transition: transform .08s ease, background .15s ease, box-shadow .15s ease, opacity .15s ease;
   white-space: nowrap;
@@ -403,7 +477,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 
 .btn-primary {
   background: var(--primary);
-  color: #0A1A14;
+  color: var(--on-cta);
   box-shadow: var(--shadow-glow);
 }
 .btn-primary:hover { background: var(--primary-2); }
@@ -416,18 +490,18 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .btn-ghost:hover { background: var(--surface-2); border-color: var(--border-2); }
 
 .btn-soft {
-  background: rgba(0,229,160,.10);
+  background: rgb(var(--accent-rgb) / .10);
   color: var(--primary);
-  border: 1px solid rgba(0,229,160,.25);
+  border: 1px solid rgb(var(--accent-rgb) / .25);
 }
-.btn-soft:hover { background: rgba(0,229,160,.18); }
+.btn-soft:hover { background: rgb(var(--accent-rgb) / .18); }
 
 .btn-danger {
-  background: rgba(255,77,109,.10);
+  background: rgb(var(--negative-rgb) / .10);
   color: var(--negative);
-  border: 1px solid rgba(255,77,109,.25);
+  border: 1px solid rgb(var(--negative-rgb) / .25);
 }
-.btn-danger:hover { background: rgba(255,77,109,.20); }
+.btn-danger:hover { background: rgb(var(--negative-rgb) / .20); }
 
 .btn-full { width: 100%; }
 
@@ -437,8 +511,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   transform: translateX(calc(var(--app-max) / 2 - 76px));
   width: 60px; height: 60px;
   border-radius: 999px;
-  background: var(--primary); color: #0A1A14;
-  box-shadow: 0 0 0 1px rgba(0,229,160,.4), 0 12px 32px rgba(0,229,160,.4), 0 4px 12px rgba(0,0,0,.4);
+  background: var(--primary); color: var(--on-cta);
+  box-shadow: 0 0 0 1px rgb(var(--accent-rgb) / .4), 0 12px 32px rgb(var(--accent-rgb) / .4), 0 4px 12px rgb(var(--shadow-rgb) / .12);
   display: inline-flex; align-items: center; justify-content: center;
   z-index: 15;
   transition: transform .12s ease, background .15s ease;
@@ -456,11 +530,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   width: 36px; height: 36px;
   border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
-  font-family: 'Manrope'; font-weight: 700; font-size: 13px;
+  font-family: 'Inter'; font-weight: 700; font-size: 13px;
   color: #FFFFFF;
   flex-shrink: 0;
   letter-spacing: 0;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.15);
+  box-shadow: inset 0 1px 0 rgb(var(--ink-rgb) / .15);
 }
 .avatar.sm { width: 28px; height: 28px; font-size: 11px; }
 .avatar.lg { width: 56px; height: 56px; font-size: 18px; border-radius: 999px; }
@@ -474,7 +548,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
-  font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+  font-family: 'Inter'; font-weight: 600; font-size: 13px;
   color: var(--text-soft);
   transition: all .15s ease;
   /* 44px = Apple/Material minimum tap target (was 38px). */
@@ -486,10 +560,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .chip.selectable { cursor: pointer; }
 .chip.selectable:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-2); }
 .chip.active {
-  background: var(--primary); border-color: var(--primary); color: #0A1A14;
+  background: var(--primary); border-color: var(--primary); color: var(--on-cta);
 }
 .chip.active.soft {
-  background: var(--primary-soft); border-color: rgba(0,229,160,.4); color: var(--primary);
+  background: var(--primary-soft); border-color: rgb(var(--accent-rgb) / .4); color: var(--primary);
 }
 
 .chip-member {
@@ -498,7 +572,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   border-radius: 999px;
   background: var(--surface);
   border: 1.5px solid var(--border);
-  font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+  font-family: 'Inter'; font-weight: 600; font-size: 13px;
   color: var(--text);
   transition: all .15s ease;
   min-height: 44px;
@@ -508,18 +582,18 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .chip-member:hover { border-color: var(--border-2); background: var(--surface-2); }
 .chip-member.active {
-  background: rgba(0,229,160,.10);
-  border-color: rgba(0,229,160,.4);
+  background: rgb(var(--accent-rgb) / .10);
+  border-color: rgb(var(--accent-rgb) / .4);
   color: var(--primary);
 }
 .chip-member.selected-pay {
-  background: var(--primary); border-color: var(--primary); color: #0A1A14;
+  background: var(--primary); border-color: var(--primary); color: var(--on-cta);
 }
 .chip-member .you-tag {
   font-size: 10px; color: var(--primary); font-weight: 800;
   letter-spacing: .04em;
 }
-.chip-member.selected-pay .you-tag { color: #0A1A14; }
+.chip-member.selected-pay .you-tag { color: var(--on-cta); }
 
 .member-pill {
   display: inline-flex; align-items: center; gap: 8px;
@@ -527,7 +601,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
-  font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+  font-family: 'Inter'; font-weight: 600; font-size: 13px;
   color: var(--text);
   min-height: 44px;
   max-width: 100%;
@@ -554,7 +628,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .tab {
   flex: 1; min-width: 0; height: 44px;
   border-radius: 999px;
-  font-family: 'Manrope'; font-weight: 600; font-size: 13px;
+  font-family: 'Inter'; font-weight: 600; font-size: 13px;
   color: var(--text-mute);
   transition: background .15s ease, color .15s ease;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -563,11 +637,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .tab.active {
   background: linear-gradient(180deg, var(--surface-3) 0%, var(--surface-2) 100%);
   color: var(--text);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  box-shadow: inset 0 1px 0 rgb(var(--ink-rgb) / .06);
 }
 
 /* ---------- Amounts ---------- */
-.amt { font-family: 'Manrope'; font-weight: 800; letter-spacing: -.02em; }
+.amt { font-family: 'Inter'; font-weight: 800; letter-spacing: -.02em; }
 .amt-xl { font-size: 28px; letter-spacing: -.03em; }
 .amt-lg { font-size: 22px; }
 .amt-md { font-size: 17px; }
@@ -589,11 +663,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .amount-input-wrap::before {
   content: '₹';
   position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
-  font-family: 'Manrope'; font-weight: 800; font-size: 22px;
+  font-family: 'Inter'; font-weight: 800; font-size: 22px;
   color: var(--text-mute); pointer-events: none;
 }
 .amount-input {
-  font-family: 'Manrope'; font-weight: 800; font-size: 26px;
+  font-family: 'Inter'; font-weight: 800; font-size: 26px;
   letter-spacing: -.02em;
   padding-left: 40px;
 }
@@ -609,12 +683,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   border-radius: 12px;
   border: 2px solid transparent;
   transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.1);
+  box-shadow: inset 0 1px 0 rgb(var(--ink-rgb) / .1);
 }
 .swatch.active {
   border-color: var(--text);
   transform: scale(1.06);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 4px 14px rgba(0,0,0,.4);
+  box-shadow: inset 0 1px 0 rgb(var(--ink-rgb) / .1), 0 4px 14px rgb(var(--shadow-rgb) / .12);
 }
 .emoji-picker { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
 .emoji-cell {
@@ -623,12 +697,12 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   transition: background .12s ease;
 }
 .emoji-cell:hover { background: var(--surface-2); }
-.emoji-cell.active { background: rgba(0,229,160,.15); }
+.emoji-cell.active { background: rgb(var(--accent-rgb) / .15); }
 
 /* ---------- Bottom sheet ---------- */
 .scrim {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.7);
+  background: var(--scrim);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 50;
@@ -645,7 +719,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   border: 1px solid var(--border-2);
   border-bottom: 0;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -20px 60px rgba(0,0,0,.6);
+  box-shadow: 0 -20px 60px var(--scrim);
   z-index: 60;
   /* dvh tracks the on-screen keyboard and browser chrome; the vh line is
      a fallback for older browsers. Capping at 92% leaves the scrim tappable. */
@@ -669,7 +743,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   flex-shrink: 0;
 }
 .sheet-title {
-  font-family: 'Manrope'; font-weight: 700;
+  font-family: 'Inter'; font-weight: 700;
   font-size: 17px; letter-spacing: -.01em;
   margin: 0;
   /* Long trip/group names used to push Cancel and Save off the edges. */
@@ -677,7 +751,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .sheet-cancel, .sheet-save {
-  font-family: 'Manrope'; font-weight: 600; font-size: 14px;
+  font-family: 'Inter'; font-weight: 600; font-size: 14px;
   /* 44px minimum tap target (was ~34px). */
   min-height: 44px; min-width: 60px;
   display: inline-flex; align-items: center; justify-content: center;
@@ -687,7 +761,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .sheet-cancel { color: var(--text-mute); }
 .sheet-cancel:hover { background: var(--surface); color: var(--text); }
 .sheet-save { color: var(--primary); }
-.sheet-save:hover { background: rgba(0,229,160,.1); }
+.sheet-save:hover { background: rgb(var(--accent-rgb) / .1); }
 .sheet-save:disabled { color: var(--text-faint); background: transparent; cursor: not-allowed; }
 
 .sheet-body {
@@ -721,14 +795,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   padding: 12px 16px;
   border-radius: var(--r-2);
   font-family: 'Inter'; font-weight: 500; font-size: 13px;
-  box-shadow: 0 12px 32px rgba(0,0,0,.5);
+  box-shadow: 0 12px 32px rgb(var(--shadow-rgb) / .15);
   animation: toast-in .25s cubic-bezier(.2,.8,.25,1);
   pointer-events: auto;
   display: flex; align-items: center; gap: 10px;
 }
-.toast.success { border-color: rgba(0,229,160,.35); }
+.toast.success { border-color: rgb(var(--accent-rgb) / .35); }
 .toast.success .toast-icon { color: var(--primary); }
-.toast.error   { border-color: rgba(255,77,109,.35); }
+.toast.error   { border-color: rgb(var(--negative-rgb) / .35); }
 .toast.error .toast-icon { color: var(--negative); }
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(-12px); }
@@ -758,7 +832,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .exp-main { flex: 1; min-width: 0; }
 .exp-desc {
-  font-family: 'Manrope'; font-weight: 600; font-size: 15px;
+  font-family: 'Inter'; font-weight: 600; font-size: 15px;
   color: var(--text); margin: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -769,7 +843,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .exp-side { text-align: right; flex-shrink: 0; min-width: 90px; }
 .exp-side .you-line {
-  font-family: 'Manrope'; font-weight: 800; font-size: 15px;
+  font-family: 'Inter'; font-weight: 800; font-size: 15px;
   letter-spacing: -.01em;
 }
 .exp-side .you-line.pos { color: var(--primary); }
@@ -785,7 +859,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   color: var(--text-mute); text-transform: uppercase; letter-spacing: .06em;
 }
 .exp-side .total-amt {
-  font-family: 'Manrope'; font-weight: 700; font-size: 15px;
+  font-family: 'Inter'; font-weight: 700; font-size: 15px;
   color: var(--text); margin-top: 2px;
 }
 
@@ -799,7 +873,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .balance-row + .balance-row { margin-top: 8px; }
 .balance-row .name {
-  font-family: 'Manrope'; font-weight: 600; font-size: 15px;
+  font-family: 'Inter'; font-weight: 600; font-size: 15px;
   color: var(--text);
 }
 .balance-row .status {
@@ -817,14 +891,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .settle-row + .settle-row { margin-top: 8px; }
 .settle-row .who {
-  font-family: 'Manrope'; font-weight: 600; font-size: 14px;
+  font-family: 'Inter'; font-weight: 600; font-size: 14px;
   color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .settle-row .arrow { color: var(--primary); flex-shrink: 0; }
 .settle-row .pay-amt {
   margin-left: auto;
-  font-family: 'Manrope'; font-weight: 800; font-size: 15px;
+  font-family: 'Inter'; font-weight: 800; font-size: 15px;
   letter-spacing: -.02em; color: var(--primary);
 }
 /* Pay / Mark paid / Undo sit on their own line so names never get truncated. */
@@ -846,7 +920,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 }
 .settings-item + .settings-item { margin-top: 8px; }
 .settings-item .label {
-  font-family: 'Manrope'; font-weight: 600; font-size: 15px;
+  font-family: 'Inter'; font-weight: 600; font-size: 15px;
   color: var(--text);
 }
 .settings-item .desc {
@@ -859,9 +933,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   padding: 4px 10px; border-radius: 999px;
   flex-shrink: 0;
 }
-.coming-soon { color: var(--gold); background: rgba(255,200,87,.1); border: 1px solid rgba(255,200,87,.25); }
-.badge-ok    { color: var(--primary); background: var(--primary-soft); border: 1px solid rgba(0,229,160,.3); }
-.badge-warn  { color: var(--gold); background: rgba(255,200,87,.1); border: 1px solid rgba(255,200,87,.25); }
+.coming-soon { color: var(--gold); background: rgb(var(--warning-rgb) / .1); border: 1px solid rgb(var(--warning-rgb) / .25); }
+.badge-ok    { color: var(--primary); background: var(--primary-soft); border: 1px solid rgb(var(--accent-rgb) / .3); }
+.badge-warn  { color: var(--gold); background: rgb(var(--warning-rgb) / .1); border: 1px solid rgb(var(--warning-rgb) / .25); }
 
 /* ---------- Trip recap stat grid ---------- */
 /* Grid items default to min-width:auto, so a long expense name refused to
@@ -875,7 +949,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .recap-cell {
   min-width: 0;
   overflow: hidden;
-  background: rgba(255,255,255,.04);
+  background: rgb(var(--ink-rgb) / .04);
   border-radius: 12px;
   padding: 12px;
 }
@@ -974,17 +1048,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   transform: translate(-50%, -50%);
   z-index: 201;
   pointer-events: none;
-  background: linear-gradient(135deg, rgba(0,229,160,.18) 0%, rgba(110,91,255,.18) 100%);
-  border: 1px solid rgba(0,229,160,.5);
+  background: linear-gradient(135deg, rgb(var(--accent-rgb) / .18) 0%, rgb(var(--accent2-rgb) / .18) 100%);
+  border: 1px solid rgb(var(--accent-rgb) / .5);
   backdrop-filter: blur(16px);
   border-radius: 24px;
   padding: 24px 32px;
   text-align: center;
-  box-shadow: 0 24px 64px rgba(0,0,0,.6), 0 0 60px rgba(0,229,160,.3);
+  box-shadow: 0 24px 64px var(--scrim), 0 0 60px rgb(var(--accent-rgb) / .3);
   animation: celebrate-pop .5s cubic-bezier(.2,1.6,.3,1) forwards, celebrate-fade 2.5s ease-out forwards;
 }
 .celebrate-banner h2 {
-  font-family: 'Manrope'; font-weight: 800;
+  font-family: 'Inter'; font-weight: 800;
   font-size: 28px; letter-spacing: -.02em;
   color: var(--text); margin: 0;
 }
@@ -1009,7 +1083,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   width: 100%; max-width: var(--app-max);
   display: flex; justify-content: space-around;
   padding: 6px 6px calc(6px + var(--sa-bottom));
-  background: rgba(12, 12, 18, .92);
+  background: var(--glass);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border-2);
   z-index: 40;
@@ -1032,16 +1106,16 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .plan-banner {
   width: 100%; display: flex; align-items: flex-start; gap: 12px; text-align: left;
   margin-top: 14px; padding: 14px 16px;
-  background: linear-gradient(135deg, rgba(0,229,160,.10), rgba(110,91,255,.10));
-  border: 1px solid rgba(0,229,160,.28); border-radius: var(--r-2);
+  background: linear-gradient(135deg, rgb(var(--accent-rgb) / .10), rgb(var(--accent2-rgb) / .10));
+  border: 1px solid rgb(var(--accent-rgb) / .28); border-radius: var(--r-2);
   color: var(--text); cursor: pointer;
 }
 .plan-star { font-size: 18px; line-height: 1.3; color: var(--primary); }
-.plan-title { display: block; font-family: 'Manrope'; font-weight: 700; font-size: 14px; }
+.plan-title { display: block; font-family: 'Inter'; font-weight: 700; font-size: 14px; }
 .plan-sub { display: block; color: var(--text-soft); font-size: 12.5px; margin-top: 2px; line-height: 1.45; }
 .plan-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0 10px; }
 .plan-cols ul { margin: 6px 0 0; padding-left: 16px; color: var(--text-soft); font-size: 12.5px; line-height: 1.5; }
-.plan-col-title { margin: 0; font-family: 'Manrope'; font-weight: 700; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-soft); }
+.plan-col-title { margin: 0; font-family: 'Inter'; font-weight: 700; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-soft); }
 
 /* Category breakdown */
 .cat-list { display: flex; flex-direction: column; gap: 8px; }
@@ -1050,7 +1124,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2);
 }
 .cat-emoji { font-size: 22px; width: 30px; text-align: center; }
-.cat-line { display: flex; justify-content: space-between; gap: 8px; font-family: 'Manrope'; font-weight: 700; font-size: 14px; }
+.cat-line { display: flex; justify-content: space-between; gap: 8px; font-family: 'Inter'; font-weight: 700; font-size: 14px; }
 .cat-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cat-bar { height: 6px; border-radius: 999px; background: var(--surface-3); margin: 7px 0 5px; overflow: hidden; }
 .cat-bar span { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
@@ -1063,7 +1137,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .an-controls select, .an-dates input, #an-group {
   width: 100%; min-height: 46px; padding: 10px 14px; font-size: 16px;
   background: var(--surface); color: var(--text); border: 1px solid var(--border-2); border-radius: var(--r-2);
-  font-family: 'Manrope'; font-weight: 600;
+  font-family: 'Inter'; font-weight: 600;
 }
 .an-controls { margin-top: 6px; }
 .an-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
@@ -1078,7 +1152,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 .stat-grid.two { grid-template-columns: repeat(2, 1fr); }
 .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); padding: 12px; min-width: 0; }
 .stat-label { color: var(--text-mute); font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-.stat-value { font-family: 'Manrope'; font-weight: 800; font-size: 16px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-value { font-family: 'Inter'; font-weight: 800; font-size: 16px; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stat-hint { color: var(--text-mute); font-size: 11px; margin-top: 2px; }
 @media (max-width: 380px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
 
@@ -1100,22 +1174,22 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 
 .txn { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
 .txn:last-child { border-bottom: 0; }
-.txn-title { font-family: 'Manrope'; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.txn-title { font-family: 'Inter'; font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .txn-sub { color: var(--text-mute); font-size: 12px; margin-top: 2px; }
-.txn-amt { font-family: 'Manrope'; font-weight: 700; font-size: 14px; white-space: nowrap; }
+.txn-amt { font-family: 'Inter'; font-weight: 700; font-size: 14px; white-space: nowrap; }
 
 .cmp-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
 .cmp-table th, .cmp-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: right; }
 .cmp-table th[scope="row"] { text-align: left; color: var(--text-soft); font-weight: 500; }
 .cmp-table thead th { color: var(--text-mute); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
-.cmp-table td { font-family: 'Manrope'; font-weight: 700; }
+.cmp-table td { font-family: 'Inter'; font-weight: 700; }
 .delta-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); padding: 12px 14px; margin-bottom: 8px; }
-.delta-head { display: flex; justify-content: space-between; font-family: 'Manrope'; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+.delta-head { display: flex; justify-content: space-between; font-family: 'Inter'; font-weight: 700; font-size: 14px; margin-bottom: 8px; }
 
 .people { display: grid; gap: 8px; }
 .person { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); padding: 12px 14px; }
-.person-name { font-family: 'Manrope'; font-weight: 700; font-size: 14px; }
-.person-net { font-family: 'Manrope'; font-weight: 800; font-size: 15px; }
+.person-name { font-family: 'Inter'; font-weight: 700; font-size: 14px; }
+.person-net { font-family: 'Inter'; font-weight: 800; font-size: 15px; }
 
 /* ============================================================
    Smart Trip Planner (milestone 2)
@@ -1131,26 +1205,26 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.9); curs
 
 .bsection { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); margin-top: 10px; overflow: hidden; }
 .bsection-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
-.bsection-title { display: block; font-family: 'Manrope'; font-weight: 700; font-size: 15px; }
+.bsection-title { display: block; font-family: 'Inter'; font-weight: 700; font-size: 15px; }
 .day-badge {
   width: 34px; height: 34px; border-radius: 10px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-  background: var(--primary-soft); color: var(--primary); font-family: 'Manrope'; font-weight: 800; font-size: 13px;
+  background: var(--primary-soft); color: var(--primary); font-family: 'Inter'; font-weight: 800; font-size: 13px;
 }
 .bitem { border-top: 1px solid var(--border); }
-.bitem.suggested { background: rgba(255, 200, 87, .05); }
+.bitem.suggested { background: rgb(var(--warning-rgb) / .05); }
 .bitem-main { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px 14px; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 56px; }
 .bitem-main:disabled { cursor: default; }
-.bitem-title { display: block; font-family: 'Manrope'; font-weight: 600; font-size: 14px; }
+.bitem-title { display: block; font-family: 'Inter'; font-weight: 600; font-size: 14px; }
 .bitem-sub { display: block; color: var(--text-mute); font-size: 12px; margin-top: 2px; }
 .bitem-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.bitem-amt { font-family: 'Manrope'; font-weight: 800; font-size: 15px; white-space: nowrap; }
+.bitem-amt { font-family: 'Inter'; font-weight: 800; font-size: 15px; white-space: nowrap; }
 .tag { font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); color: var(--text-soft); }
 .tag.ok { background: var(--primary-soft); color: var(--primary); }
-.tag.warn { background: rgba(255, 200, 87, .14); color: #FFC857; }
+.tag.warn { background: rgb(var(--warning-rgb) / .14); color: var(--warning-fill); }
 
 .plan-bars { display: grid; gap: 3px; margin: 7px 0 5px; }
 .pb { display: block; height: 6px; border-radius: 999px; min-width: 2px; }
-.pb-plan { background: #6E5BFF; }
+.pb-plan { background: var(--accent2); }
 .pb-actual { background: var(--primary); }
 .pb-over { background: var(--negative); }
 .legend { display: flex; gap: 16px; color: var(--text-mute); font-size: 12px; margin: 0 2px 8px; }

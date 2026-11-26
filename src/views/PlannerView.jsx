@@ -152,7 +152,7 @@ export function PlannerView({ group, trip, members, expenses, items, premium, to
               {usedPct != null && (
                 <div className="chart-card" style={{ padding: 14 }}>
                   <div className="cat-line"><span>Budget used</span><span style={{ color: usedPct > 100 ? 'var(--negative)' : 'var(--text)' }}>{usedPct}%</span></div>
-                  <div className="cat-bar" style={{ height: 10 }}><span style={{ width: `${Math.min(100, usedPct)}%`, background: usedPct > 100 ? 'var(--negative)' : usedPct >= 90 ? '#FFC857' : 'var(--primary)' }} /></div>
+                  <div className="cat-bar" style={{ height: 10 }}><span style={{ width: `${Math.min(100, usedPct)}%`, background: usedPct > 100 ? 'var(--negative)' : usedPct >= 90 ? 'var(--warning-fill)' : 'var(--primary)' }} /></div>
                   <div className="cat-meta">{money(sum.actual)} of {money(sum.plannedWithBuffer)}</div>
                 </div>
               )}
@@ -161,7 +161,7 @@ export function PlannerView({ group, trip, members, expenses, items, premium, to
                   <p className="section-title">Budget alerts</p>
                   <ul className="insights">
                     {sum.alerts.map((a) => (
-                      <li key={a.section} style={{ borderLeftColor: a.used > 100 ? 'var(--negative)' : '#FFC857' }}>
+                      <li key={a.section} style={{ borderLeftColor: a.used > 100 ? 'var(--negative)' : 'var(--warning-fill)' }}>
                         {a.section}: {a.used}% of its budget used{a.used > 100 ? ' — over budget.' : a.used === 100 ? ' — fully used.' : `, past the ${a.level}% mark.`}
                       </li>
                     ))}
@@ -241,7 +241,7 @@ export function PlannerView({ group, trip, members, expenses, items, premium, to
           </div>
           <div className="settings-item" style={{ marginTop: 12 }}>
             <div><div className="label">Total planned</div><div className="desc">{money(sum.perPersonPlanned)} per person · {sum.travellers} traveller{sum.travellers === 1 ? '' : 's'}</div></div>
-            <span style={{ fontFamily: 'Manrope', fontWeight: 800, fontSize: 18 }}>{money(sum.plannedWithBuffer)}</span>
+            <span style={{ fontFamily: 'Inter', fontWeight: 800, fontSize: 18 }}>{money(sum.plannedWithBuffer)}</span>
           </div>
         </React.Fragment>
       )}

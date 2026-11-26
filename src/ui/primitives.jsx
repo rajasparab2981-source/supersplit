@@ -42,7 +42,7 @@ export function useToasts() {
 // CSS-only confetti. Fires once, parent removes after animation.
 export function Celebration({ message }) {
   const confetti = useMemo(() => {
-    const colors = ['#00E5A0', '#6E5BFF', '#FFC857', '#FF4D6D', '#3DA9FC', '#FF7AB6'];
+    const colors = ['var(--accent)', 'var(--accent2)', 'var(--warning-fill)', 'var(--negative)', '#3DA9FC', '#FF7AB6'];
     const arr = [];
     for (let i = 0; i < 80; i++) {
       arr.push({
@@ -113,10 +113,10 @@ export function ActionsSheet({ open, onClose, title, actions }) {
             width: '100%', display: 'flex', alignItems: 'center', gap: 12,
             padding: '16px 18px',
             background: 'var(--surface)',
-            border: '1px solid ' + (a.danger ? 'rgba(255,77,109,.25)' : 'var(--border)'),
+            border: '1px solid ' + (a.danger ? 'rgb(var(--negative-rgb) / .25)' : 'var(--border)'),
             borderRadius: 'var(--r-2)',
             color: a.danger ? 'var(--negative)' : 'var(--text)',
-            fontFamily: 'Manrope', fontWeight: 600, fontSize: 15,
+            fontFamily: 'Inter', fontWeight: 600, fontSize: 15,
             textAlign: 'left',
             marginBottom: 8,
             cursor: 'pointer',

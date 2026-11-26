@@ -5,11 +5,11 @@ import { Icon } from '../ui/Icon';
 import { Avatar } from '../ui/primitives';
 
 const pillStyle = (primary) => ({
-  fontFamily: 'Manrope', fontWeight: 700, fontSize: 12,
-  color: primary ? '#0A1A14' : 'var(--text)',
+  fontFamily: 'Inter', fontWeight: 700, fontSize: 12,
+  color: primary ? 'var(--on-cta)' : 'var(--text)',
   background: primary ? 'var(--primary)' : 'var(--surface-3)',
   padding: '8px 12px', borderRadius: 999, minHeight: 36,
-  boxShadow: primary ? '0 0 0 1px rgba(0,229,160,.4), 0 4px 12px rgba(0,229,160,.3)' : 'none',
+  boxShadow: primary ? '0 0 0 1px rgb(var(--accent-rgb) / .4), 0 4px 12px rgb(var(--accent-rgb) / .3)' : 'none',
   whiteSpace: 'nowrap',
 });
 

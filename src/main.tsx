@@ -4,6 +4,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import './styles.css';
+import './redesign.css';
+import { applyTheme } from './lib/theme';
+
+applyTheme(); // before first paint, so there is no flash of the wrong theme
 
 const el = document.getElementById('root');
 if (!el) throw new Error('Missing #root element');

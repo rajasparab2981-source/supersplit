@@ -28,7 +28,7 @@ export function GroupView({ group, members, trips, self, tripSummaries, onOpenTr
 
       {/* Hero */}
       <div className="summary" style={{
-        background: `radial-gradient(120% 100% at 0% 0%, ${group.color}30 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}20 0%, transparent 60%), linear-gradient(140deg, #15151E 0%, #1C1C2C 100%)`,
+        background: `radial-gradient(120% 100% at 0% 0%, ${group.color}30 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}20 0%, transparent 60%), linear-gradient(140deg, var(--surface) 0%, var(--surface-2) 100%)`,
         borderColor: `${group.color}40`,
       }}>
         <div className="grain" />
@@ -40,10 +40,10 @@ export function GroupView({ group, members, trips, self, tripSummaries, onOpenTr
             // 36px → 44px: this kebab sits in a corner where mis-taps are
             // most likely, and it was the smallest control on the screen.
             width: 44, height: 44, borderRadius: 999,
-            background: 'rgba(0,0,0,.25)',
-            color: 'rgba(255,255,255,.8)',
+            background: 'rgb(var(--shadow-rgb) / .07)',
+            color: 'rgb(var(--ink-rgb) / .8)',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            border: '1px solid rgba(255,255,255,.08)',
+            border: '1px solid rgb(var(--ink-rgb) / .08)',
             backdropFilter: 'blur(8px)',
             zIndex: 2,
             cursor: 'pointer',

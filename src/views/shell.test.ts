@@ -33,20 +33,28 @@ const noop = () => {};
 
 describe('app shell screens render from real-shaped data', () => {
   it('Home shows balance, plan banner and recent activity', () => {
-    const html = renderToString(h(HomeView, { name: 'Asha Rao', groups, trips, expenses, groupSummaries, selfMap, plan,
-      onOpenGroup: noop, onOpenTrip: noop, onAddGroup: noop, onOpenPlan: noop }));
+    const html = renderToString(h(HomeView as never, { name: 'Asha Rao', groups, trips, expenses, groupSummaries, selfMap, plan, premium: true,
+      members: [{ id: 'm1', group_id: 'g1' }, { id: 'm2', group_id: 'g1' }], insights: ['Food is your biggest category.'] })).split('<!-- -->').join('');
     expect(html).toContain('Hi Asha');
-    expect(html).toContain('Premium trial');
-    expect(html).toContain('30 days left');
+    expect(html).toContain('+₹100');                                  // net balance
+    for (const action of ['Add expense', 'Create group', 'Settle up', 'Plan a trip']) expect(html).toContain(action);
+    expect(html).toContain('You have ₹100 pending from Goa Squad.');  // contextual card from the real balance
+    expect(html).toContain('2 members');
     expect(html).toContain('Dinner');
     expect(html).toContain('Bilal paid Asha');
+    expect(html).toContain('Food is your biggest category.');
+    expect(html).toContain('Premium trial · 30 days left');
+    // Services that are not built yet must not be advertised.
+    for (const unbuilt of ['Budgets', 'Receipt Scanner', 'Reports']) expect(html).not.toContain(unbuilt);
   });
 
-  it('Home with no groups and no plan still renders', () => {
-    const html = renderToString(h(HomeView, { name: '', groups: [], trips: [], expenses: [], groupSummaries: {}, selfMap: {}, plan: null,
-      onOpenGroup: noop, onOpenTrip: noop, onAddGroup: noop, onOpenPlan: noop }));
-    expect(html).toContain('New group');
+  it('Home with no groups and no plan still renders, with no invented cards', () => {
+    const html = renderToString(h(HomeView as never, { name: '', groups: [], trips: [], expenses: [], groupSummaries: {}, selfMap: {}, plan: null }));
+    expect(html).toContain('Create a group to start splitting.');
+    expect(html).toContain('Create group');
     expect(html).not.toContain('Premium trial');
+    expect(html).not.toContain('pending from');
+    expect(html).not.toContain('Recent activity');
   });
 
   it('Analytics shows my share (₹100 of a ₹300 bill), not the bill', () => {
@@ -81,9 +89,11 @@ describe('app shell screens render from real-shaped data', () => {
     expect(renderToString(h(ProfileView, { plan: null, toast: noop }))).toContain('Sign out');
   });
 
-  it('Bottom nav marks the active tab', () => {
-    const html = renderToString(h(BottomNav, { active: 'analytics', onChange: noop }));
+  it('Tab bar: Home, Groups, Add, Trips, Profile, with one active tab', () => {
+    const html = renderToString(h(BottomNav, { active: 'trips', onChange: noop, onAdd: noop }));
     expect(html.match(/aria-current="page"/g)?.length).toBe(1);
-    for (const label of ['Home', 'Groups', 'Trips', 'Analytics', 'Profile']) expect(html).toContain(label);
+    for (const label of ['Home', 'Groups', 'Add', 'Trips', 'Profile']) expect(html).toContain(label);
+    expect(html).toContain('aria-label="Add expense"');
+    expect(html).not.toContain('Analytics'); // reached from Home now
   });
 });

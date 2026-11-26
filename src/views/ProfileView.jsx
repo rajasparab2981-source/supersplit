@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { DB } from '../db/db';
 import { fmtDate } from '../lib/dates';
+import { getThemeChoice, setThemeChoice } from '../lib/theme';
 import { isValidVpa } from '../lib/upi';
 import { Avatar } from '../ui/primitives';
 
@@ -43,6 +44,8 @@ export function ProfileView({ plan, toast }) {
   const [name, setName] = useState(profile?.display_name || '');
   const [upi, setUpi] = useState(profile?.upi_id || '');
   const [busy, setBusy] = useState(false);
+  const [theme, setTheme] = useState(getThemeChoice);
+  const pickTheme = (t) => { setThemeChoice(t); setTheme(t); };
 
   // Fill in once the profile arrives; don't overwrite what the person is typing.
   useEffect(() => {
@@ -96,7 +99,14 @@ export function ProfileView({ plan, toast }) {
           <div className="label">Currency</div>
           <div className="desc">en-IN formatting</div>
         </div>
-        <span style={{ fontFamily: 'Manrope', fontWeight: 700, color: 'var(--primary)' }}>₹ INR</span>
+        <span style={{ fontFamily: 'Inter', fontWeight: 700, color: 'var(--primary)' }}>₹ INR</span>
+      </div>
+
+      <p className="section-title">Appearance</p>
+      <div className="seg" role="group" aria-label="Theme">
+        {[['light', 'Light'], ['dark', 'Dark'], ['system', 'Match device']].map(([id, label]) => (
+          <button key={id} type="button" aria-pressed={theme === id} onClick={() => pickTheme(id)}>{label}</button>
+        ))}
       </div>
 
       <div className="spacer-3" />

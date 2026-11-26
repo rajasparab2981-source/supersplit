@@ -34,7 +34,7 @@ export function SignInScreen({ joining }) {
         <div className="emoji-bubble">₹</div>
         <h3>{joining ? 'Sign in to join the group' : 'Welcome to SplitPro'}</h3>
         <p>Split trips and shared bills with friends. Your groups sync across all your devices.</p>
-        {error && <p role="alert" style={{ color: 'var(--negative)', background: 'rgba(255,77,109,.08)', border: '1px solid rgba(255,77,109,.3)', borderRadius: 12, padding: '10px 12px', textAlign: 'left', fontSize: 14 }}>{error}</p>}
+        {error && <p role="alert" style={{ color: 'var(--negative)', background: 'rgb(var(--negative-rgb) / .08)', border: '1px solid rgb(var(--negative-rgb) / .3)', borderRadius: 12, padding: '10px 12px', textAlign: 'left', fontSize: 14 }}>{error}</p>}
 
         {/* Test builds (previews, local dev) use the staging database, which has
             no Google sign-in and can't email the public: offer only the test user. */}
