@@ -102,8 +102,8 @@ export function SignInScreen({ joining }) {
         </React.Fragment>)}
 
         <p style={{ color: 'var(--text-mute)', fontSize: 12, marginTop: 20, textAlign: 'center' }}>
-          By continuing you agree to how we handle your data, as described in our{' '}
-          <a href="/privacy" style={{ color: 'var(--primary)' }}>Privacy Policy</a>.
+          By continuing you agree to our <a href="/terms">Terms of Use</a> and{' '}
+          <a href="/privacy">Privacy Policy</a>.
         </p>
 
         {DB.isStaging() && (

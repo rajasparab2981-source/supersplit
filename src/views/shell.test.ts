@@ -14,6 +14,7 @@ vi.mock('../db/db', () => ({
 import { BottomNav } from '../ui/BottomNav';
 import { AnalyticsView } from './AnalyticsView';
 import { HomeView } from './HomeView';
+import { PremiumView } from './PremiumView';
 import { ProfileView } from './ProfileView';
 import { TripsView } from './TripsView';
 
@@ -77,16 +78,25 @@ describe('app shell screens render from real-shaped data', () => {
     const strip = (s: string) => s.split('<!-- -->').join('');
     const html = strip(renderToString(h(TripsView as never, { ...props, premium: true })));
     expect(html).toContain('Goa Weekend');
-    expect(html).toContain('spent ₹300 of ₹1,000 planned');
-    expect(html).toContain('1 expense');
+    expect(html).toContain('Spent of ₹1,000 planned');
+    expect(html).toContain('₹300');
+    expect(html).toContain('30% used');
     expect(renderToString(h(TripsView as never, { ...props, premium: false }))).toContain('Planning is part of Premium');
   });
 
   it('Profile shows the plan and details; free plan explains the pause', () => {
-    expect(renderToString(h(ProfileView, { plan, toast: noop }))).toContain('Premium trial');
-    const free = renderToString(h(ProfileView, { plan: { ...plan, plan: 'free', days_left: 0 }, toast: noop }));
+    expect(renderToString(h(ProfileView, { plan, toast: noop, onOpenPlan: noop }))).toContain('Premium trial');
+    const free = renderToString(h(ProfileView, { plan: { ...plan, plan: 'free', days_left: 0 }, toast: noop, onOpenPlan: noop }));
     expect(free).toContain('Premium features are paused');
-    expect(renderToString(h(ProfileView, { plan: null, toast: noop }))).toContain('Sign out');
+    expect(renderToString(h(ProfileView, { plan: null, toast: noop, onOpenPlan: noop }))).toContain('Sign out');
+  });
+
+  it('Premium page compares the plans and takes no payment', () => {
+    const html = renderToString(h(PremiumView, { plan }));
+    expect(html).toContain('Premium trial');
+    expect(html).toContain('Smart Trip Planner');
+    expect(html).toContain('Subscriptions are not open yet');
+    expect(renderToString(h(PremiumView, { plan: null }))).toContain('Free plan');
   });
 
   it('Tab bar: Home, Groups, Add, Trips, Profile, with one active tab', () => {

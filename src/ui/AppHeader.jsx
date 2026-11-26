@@ -6,7 +6,7 @@ import { Avatar } from './primitives';
  * Sticky header. On Home: brand, plan indicator and your avatar.
  * On other screens: back, title and the calculator.
  */
-export function AppHeader({ home, bare, title, subtitle, onBack, onCalc, plan, name, onProfile }) {
+export function AppHeader({ home, bare, title, subtitle, onBack, onCalc, plan, name, onProfile, onPlan }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4);
@@ -25,7 +25,7 @@ export function AppHeader({ home, bare, title, subtitle, onBack, onCalc, plan, n
         </div>
         {!bare && <div className="header-actions">
           {pill && (
-            <button type="button" className="premium-pill" onClick={onProfile} aria-label={`Your plan: ${pill}`}>
+            <button type="button" className="premium-pill" onClick={onPlan || onProfile} aria-label={`Your plan: ${pill}`}>
               <Li.Star size={14} /> {pill}
             </button>
           )}

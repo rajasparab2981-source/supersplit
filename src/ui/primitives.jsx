@@ -243,12 +243,12 @@ export function Header({ title, subtitle, onBack, onSettings, onCalc, syncStatus
   );
 }
 
-export function ConfirmSheet({ open, onClose, onConfirm, title, message, confirmLabel = 'Delete' }) {
+export function ConfirmSheet({ open, onClose, onConfirm, title, message, confirmLabel = 'Delete', tone = 'danger' }) {
   return (
     <Sheet open={open} onClose={onClose} title={title}>
       <p style={{ color: 'var(--text-soft)', marginTop: 4, fontSize: 14 }}>{message}</p>
       <div className="spacer-2" />
-      <button className="btn btn-danger btn-full" onClick={onConfirm}>{confirmLabel}</button>
+      <button className={`btn ${tone === 'danger' ? 'btn-danger' : 'btn-primary'} btn-full`} onClick={onConfirm}>{confirmLabel}</button>
       <div className="spacer-1" />
       <button className="btn btn-ghost btn-full" onClick={onClose}>Cancel</button>
       <div className="spacer-1" />
