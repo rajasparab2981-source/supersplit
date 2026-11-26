@@ -413,7 +413,8 @@ a.list-row:hover { background: var(--surface-2); }
 /* ---------- Desktop: navigation moves to a sidebar ---------- */
 @media (min-width: 900px) {
   :root { --app-max: 620px; --side: 240px; }
-  body { background: var(--bg); padding-left: var(--side); }
+  body { background: var(--bg); }
+  body:has(.bottom-nav) { padding-left: var(--side); }
   .app { background: none; box-shadow: none; padding-bottom: 40px; }
   .app-content { padding-bottom: 40px; }
   .bottom-nav {
@@ -432,10 +433,10 @@ a.list-row:hover { background: var(--surface-2); }
   .add-label { display: none; }
   .add-label-wide { display: inline; }
   .bottom-nav-add:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
-  .sheet, .toast-stack { left: calc(50% + var(--side) / 2); }
+  body:has(.bottom-nav) .sheet, body:has(.bottom-nav) .toast-stack { left: calc(50% + var(--side) / 2); }
   .sheet { bottom: 50%; transform: translate(-50%, 50%); border-radius: 24px; border-bottom: 1px solid var(--border-2); max-height: 86vh; animation: fade-in .18s ease; }
   .sheet-handle { display: none; }
-  .receipt-screen { left: var(--side); }
+  body:has(.bottom-nav) .receipt-screen { left: var(--side); }
   .spacer-fab { height: 24px; }
 }
-@media (min-width: 900px) { .app-header .brand > .brand-mark, .app-header .brand > .brand-name { display: none; } }
+@media (min-width: 900px) { body:has(.bottom-nav) .app-header .brand > .brand-mark, body:has(.bottom-nav) .app-header .brand > .brand-name { display: none; } }
