@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DB } from '../db/db';
 import { clearRedirectError, peekRedirectError } from '../lib/authRedirect';
 import { IS_TOUCH } from '../lib/env';
+import { BrandMark, Li } from '../ui/LineIcons';
 
 /**
  * Whether sign-in emails contain a typeable code. Supabase's default emails
@@ -30,10 +31,17 @@ export function SignInScreen({ joining }) {
 
   return (
     <main className="app-content">
-      <div className="empty" style={{ maxWidth: 380, margin: '0 auto' }}>
-        <div className="emoji-bubble">₹</div>
-        <h3>{joining ? 'Sign in to join the group' : 'Welcome to SplitPro'}</h3>
-        <p>Split trips and shared bills with friends. Your groups sync across all your devices.</p>
+      <div className="auth fade-in">
+        <div className="auth-hero">
+          <BrandMark size={56} />
+          <h1>{joining ? 'Sign in to join the group' : 'Split costs, stay friends'}</h1>
+          <p>Track shared expenses for trips, flats and nights out, and see who owes whom.</p>
+        </div>
+        <ul className="auth-points">
+          <li><span><Li.Receipt size={18} /></span>Add an expense in seconds and split it your way</li>
+          <li><span><Li.Handshake size={18} /></span>Settle up with the fewest payments</li>
+          <li><span><Li.Groups size={18} /></span>Everyone in the group sees the same numbers</li>
+        </ul>
         {error && <p role="alert" style={{ color: 'var(--negative)', background: 'rgb(var(--negative-rgb) / .08)', border: '1px solid rgb(var(--negative-rgb) / .3)', borderRadius: 12, padding: '10px 12px', textAlign: 'left', fontSize: 14 }}>{error}</p>}
 
         {/* Test builds (previews, local dev) use the staging database, which has
@@ -41,7 +49,7 @@ export function SignInScreen({ joining }) {
         {!DB.isStaging() && (<React.Fragment>
         <button type="button" className="btn btn-full" disabled={busy}
           onClick={() => run(() => DB.signInWithGoogle())}
-          style={{ marginTop: 20, background: '#fff', color: '#1F1F1F', fontWeight: 700 }}>
+          style={{ marginTop: 20, background: '#fff', color: '#1F1F1F', fontWeight: 700, border: '1px solid #DADCE0' }}>
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style={{ marginRight: 8 }}>
             <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
             <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
@@ -93,13 +101,13 @@ export function SignInScreen({ joining }) {
         )}
         </React.Fragment>)}
 
-        <p style={{ color: 'var(--text-mute)', fontSize: 12, marginTop: 20 }}>
+        <p style={{ color: 'var(--text-mute)', fontSize: 12, marginTop: 20, textAlign: 'center' }}>
           By continuing you agree to how we handle your data, as described in our{' '}
           <a href="/privacy" style={{ color: 'var(--primary)' }}>Privacy Policy</a>.
         </p>
 
         {DB.isStaging() && (
-          <div style={{ marginTop: 20, textAlign: 'left', border: '1px dashed var(--border-2)', borderRadius: 14, padding: 14 }}>
+          <div className="auth-test">
             <p className="section-title" style={{ margin: '0 0 6px' }}>Test version</p>
             <p style={{ color: 'var(--text-soft)', fontSize: 13, margin: '0 0 10px' }}>
               This is a preview with test data, separate from the real app. Your real groups are at supersplit.netlify.app.

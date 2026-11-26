@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { fmtINR } from '../lib/money';
 import { calcBalances, calcSettlements } from '../lib/splits';
 import { Icon } from '../ui/Icon';
+import { Li } from '../ui/LineIcons';
 import { Celebration } from '../ui/primitives';
 import { BalancesTab } from './BalancesTab';
 import { ExpensesTab } from './ExpensesTab';
@@ -42,44 +43,19 @@ export function TripView({ group, trip, members, expenses: allEntries, self, onA
 
   return (
     <React.Fragment>
-      <div className="summary" style={{
-        background: `radial-gradient(120% 100% at 0% 0%, ${group.color}28 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}1A 0%, transparent 60%), linear-gradient(140deg, var(--surface) 0%, var(--surface-2) 100%)`,
-        borderColor: `${group.color}40`,
-      }}>
-        <div className="grain" />
-        <button
-          onClick={onOpenActions}
-          aria-label="Trip actions"
-          style={{
-            position: 'absolute', top: 8, right: 8,
-            // 36px → 44px: this kebab sits in a corner where mis-taps are
-            // most likely, and it was the smallest control on the screen.
-            width: 44, height: 44, borderRadius: 999,
-            background: 'rgb(var(--shadow-rgb) / .07)',
-            color: 'rgb(var(--ink-rgb) / .8)',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            border: '1px solid rgb(var(--ink-rgb) / .08)',
-            backdropFilter: 'blur(8px)',
-            zIndex: 2,
-            cursor: 'pointer',
-          }}
-        ><Icon.More /></button>
-        <p className="label" style={{ color: group.color }}>{trip.emoji} {trip.name}</p>
-        {self ? (
-          <React.Fragment>
-            <p className={`net ${Math.abs(youNet) < 0.5 ? 'zero' : youNet > 0 ? 'pos' : 'neg'}`}>
-              {Math.abs(youNet) < 0.5 ? fmtINR(0) : (youNet > 0 ? '+' : '−') + fmtINR(Math.abs(youNet))}
-            </p>
-            <p className="sub">
-              {Math.abs(youNet) < 0.5 ? 'Settled in this trip' : youNet > 0 ? 'You are owed in this trip' : 'You owe in this trip'}
-            </p>
-          </React.Fragment>
-        ) : (
-          <React.Fragment>
-            <p className="net" style={{ color: 'var(--text)' }}>{fmtINR(total)}</p>
-            <p className="sub">Total spent · {expenses.length} expense{expenses.length === 1 ? '' : 's'}</p>
-          </React.Fragment>
-        )}
+      <div className="summary ghero">
+        <button onClick={onOpenActions} aria-label="Trip actions" className="icon-btn ghero-more"><Icon.More /></button>
+        <div className="ghero-top">
+          <span className="gcard-ico" style={{ background: `${group.color}26` }}>{trip.emoji}</span>
+          <div style={{ minWidth: 0 }}>
+            <p className="ghero-label">{!self ? 'Total spent' : Math.abs(youNet) < 0.5 ? 'You are settled' : youNet > 0 ? 'You are owed' : 'You owe'}</p>
+            <p className={`ghero-amt ${!self || Math.abs(youNet) < 0.5 ? 'zero' : youNet > 0 ? 'pos' : 'neg'}`}>{fmtINR(self ? Math.abs(youNet) : total)}</p>
+          </div>
+        </div>
+        <div className="action-row">
+          <button type="button" className="btn btn-primary" onClick={onAddExpense}><Li.Receipt size={18} /> Add expense</button>
+          <button type="button" className="btn btn-ghost" onClick={() => setTab('settle')}><Li.Handshake size={18} /> Settle</button>
+        </div>
         <div className="summary-split">
           <div>
             <div className="col-label">Expenses</div>
@@ -112,10 +88,6 @@ export function TripView({ group, trip, members, expenses: allEntries, self, onA
       {/* Spacer must come AFTER the recap card, otherwise the FAB floats on
           top of it and hides the last rows. */}
       <div className="spacer-fab" />
-
-      {tab === 'expenses' && members.length > 0 && (
-        <button className="fab" onClick={onAddExpense} aria-label="Add expense"><Icon.Plus /></button>
-      )}
 
       {celebrating && <Celebration message={`"${trip.name}" is fully settled!`} />}
     </React.Fragment>

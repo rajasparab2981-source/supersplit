@@ -68,14 +68,10 @@ export function TripRecap({ trip, group, expenses, balances }) {
   return (
     <React.Fragment>
       <p className="section-title">Trip recap</p>
-      <div className="summary" style={{
-        background: `radial-gradient(120% 100% at 0% 0%, ${group.color}24 0%, transparent 60%), radial-gradient(100% 80% at 100% 100%, ${group.color}18 0%, transparent 60%), linear-gradient(140deg, var(--surface) 0%, var(--surface-2) 100%)`,
-        borderColor: `${group.color}40`,
-        padding: 20,
-      }}>
+      <div className="summary" style={{ padding: 20 }}>
         <div className="grain" />
         <div style={{ position: 'relative' }}>
-          <p className="label" style={{ color: group.color }}>Recap · {stats.dayCount} day{stats.dayCount === 1 ? '' : 's'}</p>
+          <p className="label">Recap · {stats.dayCount} day{stats.dayCount === 1 ? '' : 's'}</p>
           <p className="net" style={{ color: 'var(--text)' }}>{fmtINR(stats.total)}</p>
           <p className="sub">across {expenses.length} expense{expenses.length === 1 ? '' : 's'} · avg {fmtINR(stats.avgPerPerson)}/person</p>
 

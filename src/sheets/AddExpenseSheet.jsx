@@ -8,7 +8,13 @@ import { computeSplit, seedSplitInputs } from '../lib/splits';
 import { Icon } from '../ui/Icon';
 import { Avatar, Sheet } from '../ui/primitives';
 
-export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, members, self, editing }) {
+/** Each person's share in rupees, for any split mode (equal splits are worked out to the paisa). */
+export function sharesFor(amount, splitAmong, shares) {
+  if (shares && Object.keys(shares).length > 0) return shares;
+  return Object.fromEntries(Object.entries(seedSplitInputs('exact', amount, splitAmong)).map(([k, v]) => [k, Number(v) || 0]));
+}
+
+export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, members, self, editing, tripName }) {
   const isEdit = !!editing;
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -62,10 +68,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
   const switchMode = (next) => {
     if (next === splitMode) return;
     if (next === 'equal') {
-      // keep splitAmong as-is (or rebuild from shareInputs keys if needed)
-      if (splitMode !== 'equal' && Object.keys(shareInputs).length > 0) {
-        setSplitAmong(Object.keys(shareInputs));
-      }
+      if (splitMode !== 'equal' && Object.keys(shareInputs).length > 0) setSplitAmong(Object.keys(shareInputs));
     } else {
       // Switching to % or exact: pre-fill an even split that already adds up
       // exactly (e.g. 33.34 / 33.33 / 33.33), so the form starts out valid.
@@ -76,7 +79,6 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
   };
 
   const toggleSplit = (name) => setSplitAmong((p) => p.includes(name) ? p.filter((n) => n !== name) : [...p, name]);
-
   const toggleShareMember = (name) => {
     setShareInputs((prev) => {
       const next = { ...prev };
@@ -85,9 +87,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
       return next;
     });
   };
-  const setShareValue = (name, value) => {
-    setShareInputs((prev) => ({ ...prev, [name]: value }));
-  };
+  const setShareValue = (name, value) => setShareInputs((prev) => ({ ...prev, [name]: value }));
 
   // ---- Compute final shares + validation ----
   // Paise-exact: % splits are converted so they add up to the amount exactly,
@@ -98,15 +98,16 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
   );
 
   const splittersCount = splitMode === 'equal' ? splitAmong.length : Object.keys(shareInputs).length;
-  const isValid =
-    description.trim().length > 0 &&
-    !isNaN(amt) && amt > 0 &&
-    !!paidBy &&
-    splittersCount > 0 &&
-    !!date &&
-    !computed.error;
+  const amountOk = !isNaN(amt) && amt > 0;
+  const isValid = description.trim().length > 0 && amountOk && !!paidBy && splittersCount > 0 && !!date && !computed.error;
 
-  const perPerson = (splitMode === 'equal' && isValid) ? amt / splitAmong.length : 0;
+  // Live preview: who ends up with which share, and what the payer gets back.
+  const preview = useMemo(() => {
+    if (!amountOk || computed.error || computed.splitAmong.length === 0) return null;
+    const shares = sharesFor(amt, computed.splitAmong, computed.shares);
+    const rows = computed.splitAmong.map((n) => ({ name: n, share: shares[n] || 0 }));
+    return { rows, payerBack: Math.round((amt - (shares[paidBy] || 0)) * 100) / 100 };
+  }, [amountOk, computed, amt, paidBy]);
 
   const submit = () => {
     if (!isValid) return;
@@ -125,107 +126,37 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
     if (!file) return;
     setPhotoBusy(true);
     try {
-      const dataUrl = await compressImage(file);
-      setImageUrl(dataUrl);
+      setImageUrl(await compressImage(file));
     } catch (e) {
       alert('Could not load image: ' + (e?.message || e));
     } finally {
       setPhotoBusy(false);
     }
   };
+  const who = (n) => (n === self ? 'You' : n);
 
   return (
-    <Sheet open={open} onClose={onClose} title={isEdit ? 'Edit expense' : 'New expense'} onSave={submit} saveLabel={isEdit ? 'Save' : 'Add'} canSave={isValid}>
-      <div className="field">
-        <label className="field-label">Photo (optional)</label>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const f = e.target.files && e.target.files[0];
-            onPickFile(f);
-            e.target.value = '';
-          }}
-        />
-        {imageUrl ? (
-          <div style={{
-            position: 'relative',
-            borderRadius: 'var(--r-2)',
-            overflow: 'hidden',
-            border: '1px solid var(--border)',
-            background: 'var(--surface)',
-          }}>
-            <img src={imageUrl} alt="" style={{ width: '100%', maxHeight: 240, objectFit: 'cover', display: 'block' }} />
-            <button
-              type="button"
-              onClick={() => setImageUrl(null)}
-              aria-label="Remove photo"
-              style={{
-                position: 'absolute', top: 8, right: 8,
-                width: 32, height: 32, borderRadius: 999,
-                background: 'var(--scrim)',
-                border: '1px solid rgb(var(--ink-rgb) / .15)',
-                color: 'white',
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer',
-              }}
-            ><Icon.X /></button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current && fileInputRef.current.click()}
-            disabled={photoBusy}
-            style={{
-              width: '100%',
-              padding: '20px 14px',
-              borderRadius: 'var(--r-2)',
-              border: '1px dashed var(--border-2)',
-              background: 'var(--surface)',
-              color: 'var(--text-soft)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              fontFamily: 'Inter', fontWeight: 500, fontSize: 14,
-              cursor: 'pointer',
-              opacity: photoBusy ? .5 : 1,
-            }}
-          >
-            <Icon.Camera />
-            {photoBusy ? 'Compressing…' : 'Attach receipt or food photo'}
-          </button>
-        )}
-      </div>
-      <div className="field">
-        <label className="field-label">Description</label>
-        {/* autoFocus only on pointer devices. On a phone it yanked the
-            keyboard up before the sheet finished animating, scrolling the
-            form to a random position. */}
-        <input autoFocus={!IS_TOUCH} placeholder="Dinner at Britto's" value={description}
-          onChange={(e) => setDescription(e.target.value)} maxLength={60}
-          enterKeyHint="next" autoComplete="off" />
-      </div>
-      <div className="field">
-        <label className="field-label">Amount</label>
+    <Sheet open={open} onClose={onClose} title={isEdit ? 'Edit expense' : 'Add expense'} onSave={submit} saveLabel={isEdit ? 'Save' : 'Add'} canSave={isValid}>
+      {tripName && <p className="xp-where">In <b>{tripName}</b></p>}
+      <div className="xp-amount">
+        <label className="field-label" htmlFor="xp-amount">Amount</label>
         <div className="amount-input-wrap">
-          <input type="number" inputMode="decimal" min="0" step="0.01" placeholder="0" className="amount-input"
-            value={amount} onChange={(e) => setAmount(e.target.value)}
-            onWheel={(e) => e.currentTarget.blur()} enterKeyHint="done" />
+          <input id="xp-amount" type="number" inputMode="decimal" min="0" step="0.01" placeholder="0" className="amount-input"
+            autoFocus={!IS_TOUCH} value={amount} onChange={(e) => setAmount(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()} enterKeyHint="next" />
         </div>
-        {amt > 0 && splitAmong.length > 0 && (
-          <p className="split-hint">{fmtINR(perPerson, true)} per person × {splitAmong.length}</p>
-        )}
       </div>
       <div className="field">
-        <label className="field-label">Date</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
+        <label className="field-label" htmlFor="xp-desc">What was it for?</label>
+        <input id="xp-desc" placeholder="Dinner at Britto's" value={description}
+          onChange={(e) => setDescription(e.target.value)} maxLength={60}
+          enterKeyHint="done" autoComplete="off" />
       </div>
       <div className="field">
         <label className="field-label">Category</label>
         <div className="chips">
           {CATEGORIES.map((c) => (
-            <button key={c.id} type="button"
+            <button key={c.id} type="button" aria-pressed={category === c.id}
               className={`chip selectable ${category === c.id ? 'active soft' : ''}`}
               onClick={() => setCategory(c.id)}>
               <span>{c.emoji}</span>{c.label}
@@ -237,7 +168,7 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
         <label className="field-label">Paid by</label>
         <div className="chips">
           {members.map((m) => (
-            <button key={m.id} type="button"
+            <button key={m.id} type="button" aria-pressed={paidBy === m.name}
               className={`chip-member ${paidBy === m.name ? 'selected-pay' : ''}`}
               onClick={() => setPaidBy(m.name)}>
               <Avatar name={m.name} size="sm" />
@@ -247,20 +178,20 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
         </div>
       </div>
       <div className="field">
-        <label className="field-label">Split mode</label>
-        <div className="chips">
-          <button type="button" className={`chip selectable ${splitMode === 'equal' ? 'active soft' : ''}`} onClick={() => switchMode('equal')}>Equal</button>
-          <button type="button" className={`chip selectable ${splitMode === 'percentage' ? 'active soft' : ''}`} onClick={() => switchMode('percentage')}>By %</button>
-          <button type="button" className={`chip selectable ${splitMode === 'exact' ? 'active soft' : ''}`} onClick={() => switchMode('exact')}>Exact ₹</button>
+        <label className="field-label">Split</label>
+        <div className="seg" role="group" aria-label="How to split">
+          <button type="button" aria-pressed={splitMode === 'equal'} onClick={() => switchMode('equal')}>Equally</button>
+          <button type="button" aria-pressed={splitMode === 'percentage'} onClick={() => switchMode('percentage')}>By %</button>
+          <button type="button" aria-pressed={splitMode === 'exact'} onClick={() => switchMode('exact')}>Exact ₹</button>
         </div>
       </div>
 
       {splitMode === 'equal' ? (
         <div className="field">
-          <label className="field-label">Split among ({splitAmong.length})</label>
+          <label className="field-label">Between ({splitAmong.length})</label>
           <div className="chips">
             {members.map((m) => (
-              <button key={m.id} type="button"
+              <button key={m.id} type="button" aria-pressed={splitAmong.includes(m.name)}
                 className={`chip-member ${splitAmong.includes(m.name) ? 'active' : ''}`}
                 onClick={() => toggleSplit(m.name)}>
                 <Avatar name={m.name} size="sm" />
@@ -268,97 +199,86 @@ export function AddExpenseSheet({ open, onClose, onCreate, onUpdate, onDelete, m
               </button>
             ))}
           </div>
-          <p className="split-hint">Equal split between {splitAmong.length || 0} {splitAmong.length === 1 ? 'person' : 'people'}.</p>
         </div>
       ) : (
         <div className="field">
-          <label className="field-label">
-            {splitMode === 'percentage' ? 'Set percentage per person' : 'Set exact ₹ per person'}
-          </label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <label className="field-label">{splitMode === 'percentage' ? 'Percentage per person' : 'Amount per person'}</label>
+          <div className="xp-shares">
             {members.map((m) => {
               const included = m.name in shareInputs;
               return (
-                <div
-                  key={m.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px',
-                    background: 'var(--surface)',
-                    border: '1px solid ' + (included ? 'rgb(var(--accent-rgb) / .35)' : 'var(--border)'),
-                    borderRadius: 'var(--r-2)',
-                    opacity: included ? 1 : .55,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggleShareMember(m.name)}
-                    style={{
-                      // Bumped 22px → 28px; still small, but paired with the
-                      // taller 44px row it is now a reliable thumb target.
-                      width: 28, height: 28, borderRadius: 8,
-                      border: '2px solid ' + (included ? 'var(--primary)' : 'var(--border-2)'),
-                      background: included ? 'var(--primary)' : 'transparent',
-                      color: 'var(--on-cta)',
-                      fontFamily: 'Inter', fontWeight: 800, fontSize: 15,
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                    aria-label={included ? `Exclude ${m.name}` : `Include ${m.name}`}
-                  >{included ? '✓' : ''}</button>
+                <div key={m.id} className={`xp-share ${included ? 'on' : ''}`}>
+                  <button type="button" className="xp-check" onClick={() => toggleShareMember(m.name)}
+                    aria-label={included ? `Exclude ${m.name}` : `Include ${m.name}`}>{included ? '✓' : ''}</button>
                   <Avatar name={m.name} size="sm" />
-                  <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 14, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {m.name === self ? `${m.name} (you)` : m.name}
-                  </span>
-                  {/* Shrinkable but never below 84px, so long names and the
-                      input can coexist on a 320px screen. */}
-                  <div style={{ position: 'relative', width: 100, minWidth: 84, flexShrink: 0 }}>
+                  <span className="xp-share-name">{m.name === self ? `${m.name} (you)` : m.name}</span>
+                  <div className="xp-share-input">
                     <input
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step={splitMode === 'percentage' ? '0.01' : '1'}
-                      placeholder="0"
+                      type="number" inputMode="decimal" min="0" step={splitMode === 'percentage' ? '0.01' : '1'} placeholder="0"
                       value={shareInputs[m.name] ?? ''}
                       onChange={(e) => {
                         setShareValue(m.name, e.target.value);
-                        // auto-include if user types
                         if (!(m.name in shareInputs) && e.target.value) toggleShareMember(m.name);
                       }}
                       onWheel={(e) => e.currentTarget.blur()}
                       disabled={!included}
-                      style={{
-                        padding: '10px 26px 10px 10px',
-                        fontFamily: 'Inter', fontWeight: 700,
-                        // Must stay >=16px or iOS zooms the sheet on every tap.
-                        fontSize: 16,
-                        textAlign: 'right',
-                        minHeight: 44,
-                      }}
+                      aria-label={`${m.name}'s ${splitMode === 'percentage' ? 'percentage' : 'amount'}`}
                     />
-                    <span style={{
-                      position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                      color: 'var(--text-mute)', fontFamily: 'Inter', fontWeight: 600, fontSize: 13,
-                      pointerEvents: 'none',
-                    }}>{splitMode === 'percentage' ? '%' : '₹'}</span>
+                    <span>{splitMode === 'percentage' ? '%' : '₹'}</span>
                   </div>
                 </div>
               );
             })}
           </div>
-          <p className="split-hint" style={{ color: computed.error ? 'var(--negative)' : 'var(--primary)' }}>
-            {computed.error
-              ? computed.error
-              : splitMode === 'percentage'
-                ? `Totals 100% across ${Object.keys(shareInputs).length} ${Object.keys(shareInputs).length === 1 ? 'person' : 'people'}`
-                : `Totals ${fmtINR(amt, true)} across ${Object.keys(shareInputs).length} ${Object.keys(shareInputs).length === 1 ? 'person' : 'people'}`
-            }
-          </p>
         </div>
       )}
+
+      <div className={`xp-preview ${computed.error ? 'bad' : ''}`} aria-live="polite">
+        <p className="xp-preview-title">Split preview</p>
+        {computed.error ? <p className="xp-preview-note">{computed.error}</p>
+          : !preview ? <p className="xp-preview-note">{splittersCount === 0 ? 'Pick at least one person to split with.' : 'Enter an amount to see each person’s share.'}</p>
+          : (
+            <React.Fragment>
+              {preview.rows.map((r) => (
+                <div key={r.name} className="xp-preview-row">
+                  <span>{who(r.name)}{r.name === paidBy ? ' · paid' : ''}</span>
+                  <b>{fmtINR(r.share, true)}</b>
+                </div>
+              ))}
+              {paidBy && preview.payerBack > 0 && (
+                <p className="xp-preview-foot">{who(paidBy)} paid {fmtINR(amt, true)} and {paidBy === self ? 'get' : 'gets'} back <b>{fmtINR(preview.payerBack, true)}</b>.</p>
+              )}
+            </React.Fragment>
+          )}
+      </div>
+
+      <div className="field">
+        <label className="field-label" htmlFor="xp-date">Date</label>
+        <input id="xp-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
+      </div>
+      <div className="field">
+        <label className="field-label">Photo (optional)</label>
+        <input ref={fileInputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+          onChange={(e) => { const f = e.target.files && e.target.files[0]; onPickFile(f); e.target.value = ''; }} />
+        {imageUrl ? (
+          <div className="xp-photo">
+            <img src={imageUrl} alt="Attached receipt" />
+            <button type="button" onClick={() => setImageUrl(null)} aria-label="Remove photo"><Icon.X /></button>
+          </div>
+        ) : (
+          <button type="button" className="xp-photo-add" onClick={() => fileInputRef.current && fileInputRef.current.click()} disabled={photoBusy}>
+            <Icon.Camera />
+            {photoBusy ? 'Compressing…' : 'Attach a receipt photo'}
+          </button>
+        )}
+      </div>
+
+      <button type="button" className="btn btn-primary btn-full" onClick={submit} disabled={!isValid}>
+        {isEdit ? 'Save changes' : amountOk ? `Add ${fmtINR(amt, true)} expense` : 'Add expense'}
+      </button>
       {isEdit && onDelete && (
         <React.Fragment>
-          <div className="spacer-3" />
+          <div className="spacer-2" />
           <button className="btn btn-danger btn-full" onClick={() => onDelete(editing)}>
             <Icon.Trash /> Delete this expense
           </button>

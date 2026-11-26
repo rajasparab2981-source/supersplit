@@ -76,6 +76,7 @@ export function HomeView({
   // Only services that exist today. More appear here as they are built.
   const services = [
     { label: 'Groups', Icon: Li.Groups, onClick: onGoGroups },
+    { label: 'Settlements', Icon: Li.Handshake, onClick: () => onSettleUp() },
     { label: 'Trip Planner', Icon: Li.Trips, onClick: onGoTrips },
     { label: 'Analytics', Icon: Li.Chart, onClick: onOpenAnalytics },
     { label: 'Calculator', Icon: Li.Calc, onClick: onOpenCalc },

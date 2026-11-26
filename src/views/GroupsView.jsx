@@ -1,80 +1,67 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { fmtINR } from '../lib/money';
-import { Icon } from '../ui/Icon';
+import { Li } from '../ui/LineIcons';
 
-// ---------- Home: groups ----------
-export function GroupsView({ groups, groupSummaries, onOpen, onAdd }) {
-  const overallNet = useMemo(() => Object.values(groupSummaries).reduce((s, x) => s + (x?.net || 0), 0), [groupSummaries]);
-  const totalSpent = useMemo(() => Object.values(groupSummaries).reduce((s, x) => s + (x?.totalSpent || 0), 0), [groupSummaries]);
-  const anySelf = useMemo(() => Object.values(groupSummaries).some((x) => x?.hasSelf), [groupSummaries]);
-  const hasAny = groups.length > 0;
+const sign = (n) => (Math.abs(n) < 0.5 ? 'zero' : n > 0 ? 'pos' : 'neg');
 
+function GroupsArt() {
   return (
-    <React.Fragment>
-      {hasAny && (
-        <div className="summary">
-          <div className="grain" />
-          <p className="label">{anySelf ? 'Your overall balance' : 'Total tracked'}</p>
-          {anySelf ? (
-            <React.Fragment>
-              <p className={`net ${Math.abs(overallNet) < 0.5 ? 'zero' : overallNet > 0 ? 'pos' : 'neg'}`}>
-                {Math.abs(overallNet) < 0.5 ? fmtINR(0) : (overallNet > 0 ? '+' : '−') + fmtINR(Math.abs(overallNet))}
-              </p>
-              <p className="sub">
-                {Math.abs(overallNet) < 0.5 ? 'You\'re all settled up' : overallNet > 0 ? 'You are owed across all groups' : 'You owe across all groups'}
-              </p>
-            </React.Fragment>
-          ) : (
-            <React.Fragment>
-              <p className="net pos">{fmtINR(totalSpent)}</p>
-              <p className="sub">Across {groups.length} group{groups.length === 1 ? '' : 's'}</p>
-            </React.Fragment>
-          )}
-        </div>
-      )}
+    <svg width="132" height="104" viewBox="0 0 132 104" aria-hidden="true">
+      <ellipse cx="66" cy="92" rx="52" ry="8" fill="rgb(var(--ink-rgb) / .06)" />
+      <circle cx="42" cy="42" r="20" fill="rgb(var(--accent2-rgb) / .22)" />
+      <circle cx="90" cy="42" r="20" fill="rgb(var(--accent-rgb) / .28)" />
+      <circle cx="66" cy="34" r="22" fill="var(--surface)" stroke="var(--accent-ink)" strokeWidth="3" />
+      <path d="M36 88c2-18 14-28 30-28s28 10 30 28" fill="var(--surface)" stroke="var(--accent-ink)" strokeWidth="3" strokeLinecap="round" />
+      <path d="M58 34h16M66 26v16" stroke="var(--accent-ink)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
-      {groups.length === 0 ? (
-        <div className="empty">
-          <div className="emoji-bubble">👥</div>
-          <h3>Start a new group</h3>
-          <p>Create your first split — track everything from chai runs to weekend trips.</p>
-          <div className="spacer-3" />
-          <button className="btn btn-primary" onClick={onAdd}><Icon.Plus /> New group</button>
-        </div>
-      ) : (
-        <React.Fragment>
-          <p className="section-title">Your groups</p>
-          <div>
-            {groups.map((g) => {
-              const s = groupSummaries[g.id] || { totalSpent: 0, net: 0, hasSelf: false };
-              return (
-                <div key={g.id} className="row" style={{ '--accent-color': g.color }} onClick={() => onOpen(g.id)}>
-                  <span className="row-emoji" style={{ '--accent-color': g.color }}>{g.emoji}</span>
-                  <div className="row-main">
-                    <p className="row-title">{g.name}</p>
-                    <p className="row-sub">{s.totalSpent > 0 ? `${fmtINR(s.totalSpent)} spent` : 'No expenses yet'}</p>
-                  </div>
-                  <div className="row-balance">
-                    {s.hasSelf ? (
-                      <React.Fragment>
-                        <div className="b-label">{Math.abs(s.net) < 0.5 ? 'settled' : s.net > 0 ? 'you\'re owed' : 'you owe'}</div>
-                        <div className={`b-amt ${Math.abs(s.net) < 0.5 ? 'zero' : s.net > 0 ? 'pos' : 'neg'}`}>
-                          {Math.abs(s.net) < 0.5 ? '—' : fmtINR(Math.abs(s.net))}
-                        </div>
-                      </React.Fragment>
-                    ) : (
-                      <div className="b-label">tap to view</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </React.Fragment>
-      )}
-
+/** Your groups as cards: who's in, what was spent, where you stand. */
+export function GroupsView({ groups, groupSummaries, memberCounts = {}, pendingCounts = {}, onOpen, onAdd }) {
+  if (groups.length === 0) {
+    return (
+      <div className="empty fade-in">
+        <GroupsArt />
+        <h3>Create your first group</h3>
+        <p>A group is the people you share costs with: a trip, your flat, a night out. Add them by name and invite them later.</p>
+        <div className="spacer-3" />
+        <button className="btn btn-primary" onClick={onAdd}><Li.GroupAdd size={20} /> Create group</button>
+      </div>
+    );
+  }
+  return (
+    <div className="fade-in">
+      <button type="button" className="btn btn-soft btn-full" style={{ marginTop: 8 }} onClick={onAdd}><Li.GroupAdd size={20} /> Create group</button>
+      <div className="gcard-list">
+        {groups.map((g) => {
+          const s = groupSummaries[g.id] || { totalSpent: 0, net: 0, hasSelf: false };
+          const n = memberCounts[g.id] || 0;
+          const pending = pendingCounts[g.id] || 0;
+          return (
+            <button key={g.id} type="button" className="gcard" onClick={() => onOpen(g.id)}>
+              <span className="gcard-top">
+                <span className="gcard-ico" style={{ background: `${g.color}26` }}>{g.emoji}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span className="gcard-name">{g.name}</span>
+                  <span className="gcard-sub">{n} member{n === 1 ? '' : 's'} · {s.totalSpent > 0 ? `${fmtINR(s.totalSpent)} spent` : 'no expenses yet'}</span>
+                </span>
+                <span className="gcard-chev"><Li.Chevron size={18} /></span>
+              </span>
+              <span className="gcard-foot">
+                <span>
+                  <span className="gcard-label">{!s.hasSelf ? 'Your balance' : sign(s.net) === 'zero' ? 'You are settled' : s.net > 0 ? 'You are owed' : 'You owe'}</span>
+                  <span className={`gcard-amt ${sign(s.net)}`}>{sign(s.net) === 'zero' ? fmtINR(0) : fmtINR(Math.abs(s.net))}</span>
+                </span>
+                {pending > 0
+                  ? <span className="pill warn">{pending} to settle</span>
+                  : s.totalSpent > 0 ? <span className="pill ok">All settled</span> : null}
+              </span>
+            </button>
+          );
+        })}
+      </div>
       <div className="spacer-fab" />
-      <button className="fab" onClick={onAdd} aria-label="Add group"><Icon.Plus /></button>
-    </React.Fragment>
+    </div>
   );
 }

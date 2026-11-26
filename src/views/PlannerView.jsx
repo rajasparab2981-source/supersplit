@@ -7,7 +7,6 @@ import { SECTIONS, dayPlan, peoplePlan, planSummary, tripLength } from '../lib/t
 import { BudgetItemSheet } from '../sheets/BudgetItemSheet';
 import { PlanTripSheet } from '../sheets/PlanTripSheet';
 import { Bars } from '../ui/charts';
-import { Icon } from '../ui/Icon';
 import { Avatar, ConfirmSheet } from '../ui/primitives';
 
 const money = (n) => fmtINR(n);
@@ -100,9 +99,9 @@ export function PlannerView({ group, trip, members, expenses, items, premium, to
 
   return (
     <React.Fragment>
-      <div className="summary" style={{ borderColor: `${group.color}40` }}>
+      <div className="summary">
         <div className="grain" />
-        <p className="label" style={{ color: group.color }}>{trip.emoji} {trip.name} · {STATUS[trip.status] || 'Trip'}</p>
+        <p className="label">{trip.emoji} {trip.name} · {STATUS[trip.status] || 'Trip'}</p>
         <p className="net" style={{ color: 'var(--text)' }}>{money(sum.plannedWithBuffer)}</p>
         <p className="sub">{sum.planned > 0 ? `Planned budget, including a ${Number(trip.buffer_pct ?? 0)}% buffer` : 'No budget lines yet. Add what you expect to spend.'}</p>
         <p className="sub" style={{ marginTop: 4 }}>{meta}</p>
@@ -317,7 +316,6 @@ export function PlannerView({ group, trip, members, expenses, items, premium, to
       )}
 
       <div className="spacer-fab" />
-      {premium && <button className="fab" onClick={() => add('food')} aria-label="Add budget line"><Icon.Plus /></button>}
 
       <BudgetItemSheet open={!!sheet} onClose={() => setSheet(null)} onSave={saveItem} onDelete={removeItem}
         editing={sheet?.editing} section={sheet?.section} members={members} dayOptions={dayOptions}

@@ -38,13 +38,13 @@ export function JoinScreen({ token, onJoined, onCancel }) {
 
   return (
     <main className="app-content">
-      <div className="empty" style={{ maxWidth: 380, margin: '0 auto' }}>
+      <div className="auth fade-in" style={{ textAlign: 'center' }}>
         {!preview && !error && <p>Checking invite…</p>}
         {preview && (
           <React.Fragment>
-            <div className="emoji-bubble" style={{ background: `${preview.color}22` }}>{preview.emoji}</div>
-            <h3>Join “{preview.group_name}”</h3>
-            <p>{preview.member_count} {preview.member_count === 1 ? 'person' : 'people'} in this group.</p>
+            <span className="gcard-ico lg" style={{ background: `${preview.color}26` }}>{preview.emoji}</span>
+            <h1 className="auth-h">Join “{preview.group_name}”</h1>
+            <p className="auth-p">{preview.member_count} {preview.member_count === 1 ? 'person' : 'people'} in this group.</p>
 
             {preview.placeholders.length > 0 && (
               <div style={{ textAlign: 'left', marginTop: 20 }}>
@@ -78,7 +78,7 @@ export function JoinScreen({ token, onJoined, onCancel }) {
         )}
         {error && (
           <React.Fragment>
-            <div className="emoji-bubble">🔗</div>
+            <span className="gcard-ico lg">🔗</span>
             <p role="alert" style={{ color: 'var(--negative)' }}>{error}</p>
           </React.Fragment>
         )}
